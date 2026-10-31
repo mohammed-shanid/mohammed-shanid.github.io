@@ -1,0 +1,281 @@
+---
+// A checklist of the page's interactive parts. Each feature reports in with
+// inspect(); progress is kept in this browser only (localStorage).
+import { inspections } from "../data/inspections";
+import { profile } from "../data/profile";
+---
+<div class="log" data-log>
+  <button class="chip" type="button" aria-expanded="false" aria-controls="inspection-panel" data-log-toggle>
+    <span class="chip-label">Inspected</span>
+    <span class="count"><span data-log-count>0</span>/{inspections.length}</span>
+  </button>
+
+  <div class="panel" id="inspection-panel" role="dialog" aria-label="Inspection log" hidden data-log-panel>
+    <p class="panel-title">Inspection log</p>
+    <p class="panel-intro">Parts of this page that respond when you use them.</p>
+    <ol class="items" role="list">
+      {inspections.map((item) => (
+        <li data-log-item={item.id}>
+          <span class="box" aria-hidden="true"></span>
+          <a href={item.href} data-log-link>{item.label}</a>
+          <span class="visually-hidden" data-log-state>not yet</span>
+        </li>
+      ))}
+    </ol>
+    <p class="done" data-log-done hidden>
+      All eight inspected. Thanks for looking around. <a href={`mailto:${profile.email}`}>Email me</a>
+    </p>
+    <button class="reset" type="button" data-log-reset>Reset the log</button>
+  </div>
+</div>
+
+<style>
+  .log {
+    position: relative;
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: baseline;
+    gap: var(--space-2);
+    padding: var(--space-1) var(--space-3);
+    border: var(--line-regular) solid var(--color-ink);
+    border-radius: var(--radius);
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-display);
+    font-size: var(--text-body);
+    font-weight: var(--weight-bold);
+    letter-spacing: var(--tracking-ui);
+    cursor: pointer;
+    transition:
+      border-color var(--duration-fast) var(--ease),
+      color var(--duration-fast) var(--ease),
+      transform var(--duration-slow) var(--ease-spring);
+  }
+
+  .chip:hover {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+  }
+
+  .count {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .chip.is-bumped {
+    animation: bump var(--duration-slow) var(--ease-spring);
+  }
+
+  .chip.is-complete {
+    border-color: var(--color-accent);
+    background: var(--color-accent);
+    color: var(--color-paper);
+  }
+
+  @keyframes bump {
+    40% {
+      transform: translateY(calc(var(--lift) * -1));
+    }
+  }
+
+  .panel {
+    position: absolute;
+    top: calc(100% + var(--space-3));
+    right: 0;
+    z-index: 20;
+    width: min(22rem, calc(100vw - 2 * var(--gutter)));
+    padding: var(--space-4);
+    border: var(--line-regular) solid var(--color-ink);
+    background: var(--color-paper);
+    color: var(--color-ink);
+  }
+
+  .panel[hidden] {
+    display: none;
+  }
+
+  .panel-title {
+    font-family: var(--font-display);
+    font-size: var(--text-lead);
+    font-weight: var(--weight-bold);
+  }
+
+  .panel-intro {
+    margin-top: var(--space-1);
+    font-size: var(--text-small);
+    color: var(--color-ink-muted);
+  }
+
+  .items {
+    margin-top: var(--space-3);
+    border-top: var(--line-hair) solid var(--color-rule);
+  }
+
+  .items li {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-2) 0;
+    border-bottom: var(--line-hair) solid var(--color-rule);
+  }
+
+  .box {
+    flex: none;
+    width: var(--space-4);
+    height: var(--space-4);
+    border: var(--line-regular) dashed var(--color-ink-muted);
+    display: grid;
+    place-items: center;
+    font-size: var(--text-small);
+    line-height: 1;
+  }
+
+  .items li.is-done .box {
+    border-style: solid;
+    border-color: var(--color-accent);
+    background: var(--color-accent);
+    color: var(--color-paper);
+  }
+
+  .items li.is-done .box::before {
+    content: "✓";
+  }
+
+  .items a {
+    font-family: var(--font-display);
+    font-weight: var(--weight-medium);
+    letter-spacing: var(--tracking-ui);
+    text-decoration: none;
+  }
+
+  .items li.is-done a {
+    color: var(--color-ink-muted);
+    text-decoration: line-through;
+    text-decoration-color: var(--color-rule);
+  }
+
+  .done {
+    margin-top: var(--space-3);
+    font-size: var(--text-small);
+  }
+
+  .done[hidden] {
+    display: none;
+  }
+
+  .reset {
+    margin-top: var(--space-3);
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--color-ink-muted);
+    font: inherit;
+    font-size: var(--text-small);
+    text-decoration: underline;
+    text-underline-offset: 0.25em;
+    cursor: pointer;
+  }
+
+  @media (max-width: 40rem) {
+    .chip-label {
+      display: none;
+    }
+
+    /* Pinned under the bar, full width, so it never leaves the screen */
+    .panel {
+      position: fixed;
+      top: var(--space-8);
+      left: var(--gutter);
+      right: var(--gutter);
+      width: auto;
+      max-height: calc(100vh - var(--space-9));
+      overflow-y: auto;
+    }
+  }
+</style>
+
+<script>
+  import { inspections } from "../data/inspections";
+
+  const KEY = "inspected";
+  const total = inspections.length;
+
+  const load = (): string[] => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(KEY) ?? "[]");
+      return Array.isArray(saved) ? saved : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const save = (ids: string[]) => {
+    try {
+      localStorage.setItem(KEY, JSON.stringify(ids));
+    } catch {}
+  };
+
+  const done = new Set(load());
+
+  for (const log of document.querySelectorAll<HTMLElement>("[data-log]")) {
+    const toggle = log.querySelector<HTMLButtonElement>("[data-log-toggle]");
+    const panel = log.querySelector<HTMLElement>("[data-log-panel]");
+    const count = log.querySelector<HTMLElement>("[data-log-count]");
+    const finished = log.querySelector<HTMLElement>("[data-log-done]");
+    if (!toggle || !panel) continue;
+
+    const render = (bump = false) => {
+      if (count) count.textContent = String(done.size);
+      for (const item of log.querySelectorAll<HTMLElement>("[data-log-item]")) {
+        const isDone = done.has(item.dataset.logItem ?? "");
+        item.classList.toggle("is-done", isDone);
+        const state = item.querySelector("[data-log-state]");
+        if (state) state.textContent = isDone ? "done" : "not yet";
+      }
+      const complete = done.size === total;
+      toggle.classList.toggle("is-complete", complete);
+      if (finished) finished.hidden = !complete;
+      if (bump) {
+        toggle.classList.remove("is-bumped");
+        void toggle.offsetWidth;
+        toggle.classList.add("is-bumped");
+      }
+      document.documentElement.classList.toggle("is-inspected", complete);
+    };
+
+    const setOpen = (open: boolean) => {
+      panel.hidden = !open;
+      toggle.setAttribute("aria-expanded", String(open));
+    };
+
+    toggle.addEventListener("click", () => setOpen(panel.hidden));
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !panel.hidden) {
+        setOpen(false);
+        toggle.focus();
+      }
+    });
+    document.addEventListener("click", (event) => {
+      if (!panel.hidden && !log.contains(event.target as Node)) setOpen(false);
+    });
+    for (const link of panel.querySelectorAll("[data-log-link]")) {
+      link.addEventListener("click", () => setOpen(false));
+    }
+    log.querySelector("[data-log-reset]")?.addEventListener("click", () => {
+      done.clear();
+      save([]);
+      render();
+    });
+
+    document.addEventListener("inspect", (event) => {
+      const id = (event as CustomEvent<string>).detail;
+      if (done.has(id)) return;
+      done.add(id);
+      save([...done]);
+      render(true);
+    });
+
+    render();
+  }
+</script>

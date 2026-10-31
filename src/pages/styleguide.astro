@@ -1,0 +1,362 @@
+---
+import Base from "../layouts/Base.astro";
+import Button from "../components/Button.astro";
+import Tag from "../components/Tag.astro";
+import ProjectCard from "../components/ProjectCard.astro";
+import ThemeToggle from "../components/ThemeToggle.astro";
+
+const typeScale = [
+  { token: "--text-display", size: "56→112px", sample: "Mohammed Shanid", font: "display" },
+  { token: "--text-h2", size: "36→48px", sample: "Projects", font: "display" },
+  { token: "--text-h3", size: "32px", sample: "ContractRail", font: "display" },
+  { token: "--text-subhead", size: "20→28px", sample: "DevOps and cloud engineer with a cybersecurity degree", font: "display" },
+  { token: "--text-lead", size: "20px", sample: "Build-enforced guardrails for AI coding agents", font: "text" },
+  { token: "--text-body", size: "17px", sample: "Migrated websites and apps for 25+ clients to AWS and Hostinger.", font: "text" },
+  { token: "--text-small", size: "14px", sample: "Fig. 1: aws-deploy-pipeline, in progress", font: "display" },
+  { token: "--text-label", size: "11px", sample: "Drawn by", font: "label" },
+];
+
+const colours = [
+  { token: "--color-paper", role: "Ground" },
+  { token: "--color-ink", role: "Text, frame lines, primary button" },
+  { token: "--color-ink-muted", role: "Secondary text, labels" },
+  { token: "--color-rule", role: "Hairlines (decorative)" },
+  { token: "--color-grid", role: "Drawing grid (decorative)" },
+  { token: "--color-accent", role: "Passed, live status, focus. Used sparingly" },
+];
+
+const hex = {
+  light: ["#e6e3da", "#1e2420", "#4a524c", "ink 22%", "ink 5%", "#2e5e3e"],
+  dark: ["#141815", "#e2e0d8", "#a9aea6", "ink 22%", "ink 4%", "#86b892"],
+};
+
+const spaces = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+const spacePx = [4, 8, 12, 16, 24, 32, 48, 64, 96, 128];
+---
+<Base title="Styleguide" description="Design tokens and components for Mohammed Shanid's portfolio.">
+  <div class="sheet">
+    <header class="top">
+      <h1 class="page-title">Styleguide</h1>
+      <ThemeToggle />
+    </header>
+
+    <section class="block" aria-labelledby="type-h">
+      <h2 id="type-h">Type</h2>
+      <p class="note">Barlow Condensed for headings, labels and the title block; Barlow for running text.</p>
+      <ol class="type-list" role="list">
+        {typeScale.map((step) => (
+          <li class="type-row">
+            <span class="meta">{step.token}<br />{step.size}</span>
+            <span class:list={["sample", step.font]} style={`font-size: var(${step.token})`}>{step.sample}</span>
+          </li>
+        ))}
+      </ol>
+    </section>
+
+    <section class="block" aria-labelledby="colour-h">
+      <h2 id="colour-h">Colour</h2>
+      <p class="note">Follows the system setting; the toggle overrides it. Every text colour passes WCAG AA on the ground.</p>
+      <div class="themes">
+        {(["light", "dark"] as const).map((theme) => (
+          <div class="theme-panel" data-theme={theme}>
+            <h3 class="panel-title">{theme === "light" ? "Light" : "Dark"}</h3>
+            <ul class="swatches" role="list">
+              {colours.map((c, i) => (
+                <li class="swatch">
+                  <span class="chip" style={`background: var(${c.token})`}></span>
+                  <span>
+                    <span class="swatch-token">{c.token}</span>
+                    <span class="swatch-meta">{hex[theme][i]}. {c.role}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <section class="block" aria-labelledby="space-h">
+      <h2 id="space-h">Space</h2>
+      <p class="note">4px base. <code>--space-5</code> (24px) is also the drawing-grid module.</p>
+      <ol class="space-list" role="list">
+        {spaces.map((n, i) => (
+          <li class="space-row">
+            <span class="meta">--space-{n}<br />{spacePx[i]}px</span>
+            <span class="space-bar" style={`width: var(--space-${n})`}></span>
+          </li>
+        ))}
+      </ol>
+    </section>
+
+    <section class="block" aria-labelledby="line-h">
+      <h2 id="line-h">Lines, radius, shadow</h2>
+      <p class="note">A drawing has no rounded corners or shadows. Depth comes from line weight: <code>--radius</code> is 0 and <code>--shadow</code> is none.</p>
+      <ul class="lines" role="list">
+        <li><span class="line" style="border-top-width: var(--line-hair)"></span><span class="meta">--line-hair, 1px: rules, grid</span></li>
+        <li><span class="line" style="border-top-width: var(--line-regular)"></span><span class="meta">--line-regular, 1.5px: frames, cards</span></li>
+        <li><span class="line" style="border-top-width: var(--line-heavy)"></span><span class="meta">--line-heavy, 2px: focus ring</span></li>
+      </ul>
+    </section>
+
+    <section class="block" aria-labelledby="actions-h">
+      <h2 id="actions-h">Buttons and links</h2>
+      <div class="row-actions">
+        <Button href="#projects">See projects</Button>
+        <Button href="#contact" variant="secondary">Email me</Button>
+        <a href="https://github.com/mohammed-shanid">GitHub</a>
+      </div>
+      <p class="prose">
+        Inline links keep a thin underline and turn green on hover, like
+        <a href="https://github.com/mohammed-shanid/contract-rail">the ContractRail repository</a>.
+        Focus shows a 2px green ring; press Tab to see it.
+      </p>
+    </section>
+
+    <section class="block" aria-labelledby="tags-h">
+      <h2 id="tags-h">Tags and status</h2>
+      <p class="note">Solid line: built. Dashed line: in progress, as on a drawing where dashes mark what is planned.</p>
+      <div class="row-tags">
+        <Tag variant="done">Published</Tag>
+        <Tag variant="progress">In progress</Tag>
+        <Tag>Terraform</Tag>
+        <Tag>Ansible</Tag>
+        <Tag>GitHub Actions</Tag>
+        <Tag>AWS</Tag>
+      </div>
+    </section>
+
+    <section class="block" aria-labelledby="card-h">
+      <h2 id="card-h">Project card</h2>
+      <ProjectCard
+        title="ContractRail"
+        summary="Build-enforced guardrails for AI coding agents"
+        status={{ label: "Pre-release v0.1", variant: "done" }}
+        problem="Instruction files tell an AI coding agent not to cross an architectural boundary, but nothing stops it when it does."
+        built={[
+          "A contract template where every boundary rule must name the mechanism that enforces it.",
+          "Each rule enforced twice: an ESLint import rule, and an architecture test that walks the import graph and still fails with ESLint disabled.",
+          "A SHA-256 lock that fails the build on any silent interface change.",
+          "A CI job that applies known-bad patches on every push and fails unless the gates go red.",
+        ]}
+        stack={["TypeScript", "Node.js 24", "ESLint", "Vitest", "GitHub Actions", "Bash"]}
+        outcome="On a valid tree, typecheck, lint, 14 tests and the run check pass. Both violation patches turn lint and the architecture test red, checked in CI on every push."
+        links={[
+          { label: "Repository", href: "https://github.com/mohammed-shanid/contract-rail" },
+          { label: "CI runs", href: "https://github.com/mohammed-shanid/contract-rail/actions" },
+        ]}
+      />
+    </section>
+  </div>
+</Base>
+
+<style>
+  .sheet {
+    margin: var(--gutter);
+    padding: var(--sheet-pad);
+    border: var(--line-regular) solid var(--color-ink);
+    background-image:
+      linear-gradient(var(--color-grid) var(--line-hair), transparent var(--line-hair)),
+      linear-gradient(90deg, var(--color-grid) var(--line-hair), transparent var(--line-hair));
+    background-size: var(--grid-module) var(--grid-module);
+  }
+
+  .top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: var(--space-4);
+    padding-bottom: var(--space-5);
+    border-bottom: var(--line-regular) solid var(--color-ink);
+  }
+
+  .page-title {
+    font-size: var(--text-h2);
+  }
+
+  .block {
+    padding: var(--space-8) 0;
+    border-bottom: var(--line-hair) solid var(--color-rule);
+  }
+
+  .block:last-child {
+    border-bottom: 0;
+  }
+
+  .block h2 {
+    font-size: var(--text-h2);
+  }
+
+  .note {
+    margin-top: var(--space-2);
+    color: var(--color-ink-muted);
+  }
+
+  .meta {
+    font-family: var(--font-display);
+    font-size: var(--text-small);
+    font-weight: var(--weight-medium);
+    color: var(--color-ink-muted);
+    letter-spacing: var(--tracking-ui);
+    line-height: var(--leading-snug);
+  }
+
+  /* Type */
+  .type-list {
+    margin-top: var(--space-6);
+  }
+
+  .type-row {
+    display: grid;
+    grid-template-columns: var(--label-column) minmax(0, 1fr);
+    gap: var(--space-5);
+    align-items: baseline;
+    padding: var(--space-4) 0;
+    border-top: var(--line-hair) solid var(--color-rule);
+  }
+
+  .sample {
+    line-height: var(--leading-snug);
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .sample.display {
+    font-family: var(--font-display);
+    font-weight: var(--weight-bold);
+    letter-spacing: var(--tracking-display);
+  }
+
+  .sample.label {
+    font-family: var(--font-display);
+    font-weight: var(--weight-medium);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--color-ink-muted);
+  }
+
+  /* Colour */
+  .themes {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-5);
+    margin-top: var(--space-6);
+  }
+
+  .theme-panel {
+    padding: var(--space-5);
+    border: var(--line-regular) solid var(--color-ink);
+    background: var(--color-paper);
+    color: var(--color-ink);
+  }
+
+  .panel-title {
+    font-size: var(--text-lead);
+  }
+
+  .swatches {
+    margin-top: var(--space-4);
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .swatch {
+    display: grid;
+    grid-template-columns: var(--space-7) minmax(0, 1fr);
+    gap: var(--space-4);
+    align-items: center;
+  }
+
+  .chip {
+    height: var(--space-7);
+    border: var(--line-hair) solid var(--color-rule);
+  }
+
+  .swatch-token {
+    display: block;
+    font-family: var(--font-display);
+    font-weight: var(--weight-bold);
+  }
+
+  .swatch-meta {
+    display: block;
+    font-size: var(--text-small);
+    color: var(--color-ink-muted);
+  }
+
+  /* Space */
+  .space-list {
+    margin-top: var(--space-6);
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  .space-row {
+    display: grid;
+    grid-template-columns: var(--label-column) minmax(0, 1fr);
+    gap: var(--space-5);
+    align-items: center;
+  }
+
+  .space-bar {
+    height: var(--space-4);
+    background: var(--color-ink);
+  }
+
+  /* Lines */
+  .lines {
+    margin-top: var(--space-6);
+    display: grid;
+    gap: var(--space-5);
+  }
+
+  .lines li {
+    display: grid;
+    grid-template-columns: var(--label-column) minmax(0, 1fr);
+    gap: var(--space-5);
+    align-items: center;
+  }
+
+  .line {
+    border-top: 0 solid var(--color-ink);
+  }
+
+  /* Actions and tags */
+  .row-actions,
+  .row-tags {
+    margin-top: var(--space-6);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-5);
+    align-items: center;
+  }
+
+  .row-tags {
+    gap: var(--space-2);
+  }
+
+  .prose {
+    margin-top: var(--space-5);
+  }
+
+  #card-h + :global(.project) {
+    margin-top: var(--space-6);
+  }
+
+  @media (max-width: 40rem) {
+    .type-row,
+    .space-row,
+    .lines li {
+      grid-template-columns: 1fr;
+      gap: var(--space-2);
+    }
+
+    .themes {
+      grid-template-columns: 1fr;
+    }
+
+    .block {
+      padding: var(--space-7) 0;
+    }
+  }
+</style>

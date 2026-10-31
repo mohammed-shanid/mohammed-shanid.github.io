@@ -1,0 +1,171 @@
+---
+// The last sheet, inverted: one field of solid colour to close the set.
+import Sheet from "./Sheet.astro";
+import SectionHead from "./SectionHead.astro";
+import { profile } from "../data/profile";
+---
+<Sheet id="contact" inverse>
+  <section aria-labelledby="contact-title">
+    <SectionHead id="contact-title" title="Contact" sheet={5} of={5} />
+    <div class="body">
+      <div class="reach">
+        <p class="looking">Based in {profile.location}. Email is the quickest way to reach me.</p>
+        <a class="email" href={`mailto:${profile.email}`}>{profile.email}</a>
+        <ul class="links" role="list">
+          <li><a href={profile.links.github}>GitHub</a></li>
+          <li><a href={profile.links.linkedin}>LinkedIn</a></li>
+        </ul>
+        <div class="stamp" aria-hidden="true">
+          <span class="stamp-word">Inspected</span>
+          <span class="stamp-note">All 8 checks passed</span>
+        </div>
+      </div>
+      <div class="roles">
+        <h3>Roles I'm looking for</h3>
+        <ul role="list">
+          {profile.roles.map((role) => <li>{role}</li>)}
+        </ul>
+      </div>
+    </div>
+    <footer class="footer">
+      <span>Drawn by {profile.fullName}, 2026</span>
+      <span>Built with Astro. No trackers.</span>
+    </footer>
+  </section>
+</Sheet>
+
+<style>
+  .body {
+    display: grid;
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    gap: var(--space-7);
+    padding: 0 var(--sheet-pad) var(--space-8);
+  }
+
+  .roles {
+    align-self: start;
+    border: var(--line-regular) solid var(--color-ink);
+  }
+
+  /* Appears when every item in the inspection log is done. */
+  .stamp {
+    display: inline-grid;
+    margin-top: var(--space-7);
+    margin-left: var(--space-2);
+    justify-items: center;
+    padding: var(--space-2) var(--space-5);
+    border: var(--line-heavy) solid var(--color-accent);
+    outline: var(--line-hair) solid var(--color-accent);
+    outline-offset: var(--space-1);
+    color: var(--color-accent);
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-label);
+    opacity: 0;
+    transform: rotate(-6deg) scale(1.6);
+    pointer-events: none;
+    transition:
+      opacity var(--duration-fast) var(--ease),
+      transform var(--duration-slow) var(--ease-spring);
+  }
+
+  .stamp-word {
+    font-size: var(--text-h3);
+    font-weight: var(--weight-bold);
+    line-height: var(--leading-tight);
+  }
+
+  .stamp-note {
+    font-size: var(--text-label);
+    font-weight: var(--weight-medium);
+  }
+
+  :global(html.is-inspected) .stamp {
+    opacity: 1;
+    transform: rotate(-6deg) scale(1);
+  }
+
+  .roles h3 {
+    padding: var(--space-2) var(--space-4);
+    border-bottom: var(--line-regular) solid var(--color-ink);
+    font-size: var(--text-label);
+    font-weight: var(--weight-medium);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--color-ink-muted);
+  }
+
+  .roles li {
+    padding: var(--space-3) var(--space-4);
+    border-top: var(--line-hair) solid var(--color-rule);
+    font-family: var(--font-display);
+    font-size: var(--text-lead);
+    font-weight: var(--weight-bold);
+    letter-spacing: var(--tracking-ui);
+  }
+
+  .roles li:first-child {
+    border-top: 0;
+  }
+
+  .looking {
+    font-size: var(--text-lead);
+    line-height: var(--leading-snug);
+  }
+
+  .email {
+    display: inline-block;
+    margin-top: var(--space-5);
+    font-family: var(--font-display);
+    font-size: var(--text-h2);
+    font-weight: var(--weight-bold);
+    line-height: var(--leading-snug);
+    letter-spacing: var(--tracking-display);
+    overflow-wrap: anywhere;
+    text-decoration-thickness: var(--line-regular);
+    transition:
+      color var(--duration-fast) var(--ease),
+      transform var(--duration-slow) var(--ease-spring);
+  }
+
+  .email:hover {
+    transform: translate(calc(var(--lift) * -1), calc(var(--lift) * -1));
+  }
+
+  .links {
+    display: flex;
+    gap: var(--space-5);
+    margin-top: var(--space-5);
+    font-family: var(--font-display);
+    font-size: var(--text-lead);
+    font-weight: var(--weight-bold);
+    letter-spacing: var(--tracking-ui);
+  }
+
+  .footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: var(--space-2) var(--space-5);
+    padding: var(--space-4) var(--sheet-pad);
+    border-top: var(--line-hair) solid var(--color-rule);
+    font-family: var(--font-display);
+    font-size: var(--text-small);
+    font-weight: var(--weight-medium);
+    letter-spacing: var(--tracking-ui);
+    color: var(--color-ink-muted);
+  }
+
+  @media (max-width: 54rem) {
+    .body {
+      grid-template-columns: 1fr;
+      gap: var(--space-6);
+    }
+  }
+
+  @media (max-width: 40rem) {
+    .body {
+      padding-bottom: var(--space-6);
+    }
+  }
+</style>

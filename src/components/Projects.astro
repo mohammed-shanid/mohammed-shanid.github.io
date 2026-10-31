@@ -1,0 +1,50 @@
+---
+import Sheet from "./Sheet.astro";
+import ToolMark from "./ToolMark.astro";
+import SectionHead from "./SectionHead.astro";
+import ProjectCard from "./ProjectCard.astro";
+import AwsArchitecture from "./diagrams/AwsArchitecture.astro";
+import ContractRailDiagram from "./diagrams/ContractRailDiagram.astro";
+import MedRagDiagram from "./diagrams/MedRagDiagram.astro";
+import { projects } from "../data/profile";
+
+const figures = { aws: AwsArchitecture, contractrail: ContractRailDiagram, medragshield: MedRagDiagram };
+---
+<Sheet id="projects">
+  <ToolMark tool="docker" />
+  <ToolMark tool="ansible" index={1} />
+  <section aria-labelledby="projects-title">
+    <SectionHead
+      id="projects-title"
+      title="Projects"
+      sheet={2}
+      of={5}
+      intro="Three systems, each built so that unsafe changes fail before they ship. Try the diagrams."
+    />
+    <div class="list">
+      {projects.map((project, i) => {
+        const Figure = figures[project.id];
+        return (
+          <ProjectCard {...project} index={String(i + 1)}>
+            <Figure slot="figure" />
+          </ProjectCard>
+        );
+      })}
+    </div>
+  </section>
+</Sheet>
+
+<style>
+  .list {
+    display: grid;
+    gap: var(--space-7);
+    padding: 0 var(--sheet-pad) var(--space-8);
+  }
+
+  @media (max-width: 40rem) {
+    .list {
+      gap: var(--space-6);
+      padding-bottom: var(--space-6);
+    }
+  }
+</style>

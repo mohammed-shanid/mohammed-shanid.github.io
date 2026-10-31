@@ -1,0 +1,224 @@
+---
+// Experience as a drawing's revision table: each revision letter is a role,
+// newest first. The current role carries the accent.
+import Sheet from "./Sheet.astro";
+import ToolMark from "./ToolMark.astro";
+import SectionHead from "./SectionHead.astro";
+import Tag from "./Tag.astro";
+import Timeline from "./Timeline.astro";
+import { experience } from "../data/profile";
+---
+<Sheet id="experience">
+  <ToolMark tool="jenkins" />
+  <section aria-labelledby="experience-title">
+    <SectionHead id="experience-title" title="Experience" sheet={3} of={5} />
+    <div class="wrap">
+      <Timeline />
+      <table class="revisions">
+        <caption class="visually-hidden">Work experience, newest first</caption>
+        <thead>
+          <tr>
+            <th scope="col">Rev</th>
+            <th scope="col">Dates</th>
+            <th scope="col">Role and work</th>
+            <th scope="col">Tools</th>
+          </tr>
+        </thead>
+        <tbody>
+          {experience.map((job, i) => (
+            <tr id={`rev-${job.rev.toLowerCase()}`} class:list={{ current: i === 0 }} data-trace-scope={job.short}>
+              <td class="rev" aria-label={`Revision ${job.rev}`}>{job.rev}</td>
+              <td class="dates">{job.dates}</td>
+              <td class="work">
+                <div class="role-line">
+                  <h3>{job.role}</h3>
+                  {i === 0 && <Tag variant="done">Current</Tag>}
+                </div>
+                <p class="org">{job.org}</p>
+                <ul>
+                  {job.points.map((point) => <li>{point}</li>)}
+                </ul>
+              </td>
+              <td class="tools">
+                <ul class="tool-list" role="list" aria-label={`Tools at ${job.org}`}>
+                  {job.tools.map((tool) => <li><Tag tool={tool}>{tool}</Tag></li>)}
+                </ul>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</Sheet>
+
+<style>
+  .wrap {
+    padding: 0 var(--sheet-pad) var(--space-8);
+  }
+
+  .revisions {
+    width: 100%;
+    border-collapse: collapse;
+    border: var(--line-regular) solid var(--color-ink);
+    background: var(--color-paper);
+  }
+
+  th {
+    padding: var(--space-2) var(--space-4);
+    border-bottom: var(--line-regular) solid var(--color-ink);
+    font-family: var(--font-display);
+    font-size: var(--text-label);
+    font-weight: var(--weight-medium);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    text-align: left;
+    color: var(--color-ink-muted);
+  }
+
+  td {
+    padding: var(--space-5) var(--space-4);
+    border-bottom: var(--line-hair) solid var(--color-rule);
+    vertical-align: top;
+  }
+
+  tr:last-child td {
+    border-bottom: 0;
+  }
+
+  th + th,
+  td + td {
+    border-left: var(--line-hair) solid var(--color-rule);
+  }
+
+  .rev {
+    width: var(--space-8);
+    font-family: var(--font-display);
+    font-size: var(--text-h2);
+    font-weight: var(--weight-bold);
+    line-height: var(--leading-tight);
+    text-align: center;
+    color: var(--color-ink-muted);
+  }
+
+  .current .rev {
+    color: var(--color-accent);
+  }
+
+  .dates {
+    width: var(--label-column);
+    font-family: var(--font-display);
+    font-weight: var(--weight-medium);
+    letter-spacing: var(--tracking-ui);
+    white-space: nowrap;
+  }
+
+  .role-line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  h3 {
+    font-size: var(--text-lead);
+  }
+
+  .org {
+    margin-top: var(--space-1);
+    color: var(--color-ink-muted);
+  }
+
+  .work ul {
+    margin-top: var(--space-3);
+    padding-left: var(--space-4);
+    max-width: var(--measure);
+  }
+
+  .work li + li {
+    margin-top: var(--space-2);
+  }
+
+  .tools {
+    width: 30%;
+  }
+
+  .tool-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  /* Rows lift slightly under the pointer, like the drawing's stages. */
+  tbody tr {
+    transition: background-color var(--duration-fast) var(--ease);
+  }
+
+  tbody tr:hover,
+  tbody tr.is-hot {
+    background: var(--color-grid);
+  }
+
+  /* Arriving from the timeline: the row's revision letter takes a green edge. */
+  tbody tr.is-flashed .rev {
+    box-shadow: inset var(--space-1) 0 0 var(--color-accent);
+  }
+
+  @media (max-width: 40rem) {
+    .wrap {
+      padding-bottom: var(--space-6);
+    }
+
+    thead {
+      display: none;
+    }
+
+    tr {
+      display: grid;
+      grid-template-columns: var(--space-7) minmax(0, 1fr);
+      border-bottom: var(--line-hair) solid var(--color-rule);
+    }
+
+    tr:last-child {
+      border-bottom: 0;
+    }
+
+    td {
+      border: 0;
+      padding: var(--space-3) var(--space-3);
+    }
+
+    td + td {
+      border-left: 0;
+    }
+
+    .rev {
+      grid-row: span 2;
+      width: auto;
+      font-size: var(--text-h3);
+      border-right: var(--line-hair) solid var(--color-rule);
+    }
+
+    .dates {
+      width: auto;
+      padding-bottom: 0;
+      font-size: var(--text-small);
+      color: var(--color-ink-muted);
+    }
+
+    .work {
+      grid-column: 2;
+      padding-top: var(--space-1);
+    }
+
+    .tools {
+      grid-column: 2;
+      width: auto;
+      padding-top: 0;
+    }
+
+    .rev {
+      grid-row: span 3;
+    }
+  }
+</style>

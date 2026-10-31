@@ -1,0 +1,360 @@
+---
+// Architecture of the AWS Deployment Pipeline, from the repo's design notes and
+// the CV, with an attack simulator: pick an attack and the drawing shows the
+// control that stops it. The project is in progress; this is its design.
+type Node = { id: string; x: number; y: number; w: number; h: number; label: string; note?: string };
+
+const nodes: Node[] = [
+  { id: "actions", x: 10, y: 10, w: 170, h: 46, label: "GitHub Actions", note: "build and test" },
+  { id: "iam", x: 280, y: 10, w: 170, h: 46, label: "IAM role", note: "this repo + main only" },
+  { id: "trivy", x: 10, y: 110, w: 170, h: 46, label: "Trivy scan", note: "before the push" },
+  { id: "ecr", x: 280, y: 110, w: 170, h: 46, label: "ECR", note: "tag = git SHA" },
+  { id: "ssm", x: 10, y: 210, w: 170, h: 46, label: "SSM Run Command", note: "restricted document" },
+  { id: "tf", x: 310, y: 210, w: 140, h: 46, label: "Terraform", note: "policy tests" },
+  { id: "cw", x: 10, y: 460, w: 170, h: 46, label: "CloudWatch", note: "disk, uptime, restarts" },
+  { id: "sns", x: 280, y: 460, w: 170, h: 46, label: "SNS email" },
+];
+
+const attacks = [
+  {
+    id: "keys",
+    label: "Steal AWS keys from CI",
+    target: "iam",
+    outcome: "Blocked at the IAM role",
+    text: "There are no long-lived keys to steal. CI gets short-lived credentials through OIDC, and the role trusts only this repository's main branch.",
+  },
+  {
+    id: "ssh",
+    label: "SSH into the server",
+    target: "ec2",
+    outcome: "Blocked at the EC2 host",
+    text: "Port 22 is closed. The host is reached through SSM Session Manager, and deploys go through a restricted SSM document.",
+  },
+  {
+    id: "cve",
+    label: "Ship an image with a known CVE",
+    target: "trivy",
+    outcome: "Blocked at the Trivy scan",
+    text: "Trivy scans the image before it reaches ECR. A failed scan stops the run, and the scan is never switched off to get a green build.",
+  },
+  {
+    id: "tf",
+    label: "Open SSH to the internet in Terraform",
+    target: "tf",
+    outcome: "Blocked by the policy tests",
+    text: "Policy tests on the Terraform code block open SSH, unencrypted volumes and over-broad OIDC trust.",
+  },
+  {
+    id: "broken",
+    label: "Deploy a broken release",
+    target: "ec2",
+    outcome: "Recovered on the EC2 host",
+    text: "The health check fails, the previous release restarts automatically and the pipeline fails. CloudWatch alarms report it by email.",
+  },
+];
+
+const stampAt = (n: { x: number; y: number; w: number }) => ({ cx: n.x + n.w - 4, cy: n.y + 4 });
+const ec2 = { x: 10, y: 310, w: 440, h: 110 };
+---
+<figure class="d-figure aws" data-aws data-attacks={JSON.stringify(attacks)} data-tilt-zone>
+  <div data-tilt>
+    <svg class="d-svg" viewBox="0 0 460 520" role="img" aria-labelledby="aws-arch-title">
+      <title id="aws-arch-title">
+        Architecture: GitHub Actions signs in to an IAM role with OIDC, scans the image with Trivy,
+        pushes it to ECR and deploys through SSM to an EC2 host provisioned by Terraform. CloudWatch
+        alarms notify by SNS email.
+      </title>
+
+      {/* Edges */}
+      <g class="edges">
+        <path class="d-line" d="M180 33 H280" />
+        <text class="d-note-strong" x="230" y="26" text-anchor="middle">OIDC</text>
+        <path class="d-line" d="M95 56 V110" />
+        <text class="d-note" x="103" y="88">build</text>
+        <path class="d-line" d="M180 133 H280" />
+        <text class="d-note" x="230" y="126" text-anchor="middle">push if clean</text>
+        <path class="d-line" d="M95 156 V210" />
+        <text class="d-note" x="103" y="188">deploy</text>
+        <path class="d-line" d="M292 156 V310" />
+        <text class="d-note" x="286" y="290" text-anchor="end">pull by SHA</text>
+        <path class="d-line" d="M95 256 V310" />
+        <path class="d-line" d="M380 256 V310" />
+        <text class="d-note" x="388" y="288">provisions</text>
+        <path class="d-line" d="M95 420 V460" />
+        <text class="d-note" x="103" y="444">agent</text>
+        <path class="d-line" d="M180 483 H280" />
+        <text class="d-note" x="230" y="476" text-anchor="middle">alarms</text>
+      </g>
+
+      {/* EC2 host, with the request path inside it */}
+      <g class="d-node target" data-node="ec2">
+        <rect class="d-base" x={ec2.x} y={ec2.y} width={ec2.w} height={ec2.h} />
+        <g class="d-face">
+          <rect class="d-box" x={ec2.x} y={ec2.y} width={ec2.w} height={ec2.h} />
+          <text class="d-label" x="26" y="334">EC2 host</text>
+          <text class="d-note" x="440" y="334" text-anchor="end">port 22 closed, IMDSv2 only</text>
+          <rect class="d-box inner" x="26" y="354" width="160" height="44" />
+          <text class="d-label" x="106" y="381" text-anchor="middle">Nginx :443</text>
+          <path class="d-line" d="M186 376 H262" />
+          <text class="d-note" x="224" y="369" text-anchor="middle">proxy</text>
+          <rect class="d-box inner" x="262" y="354" width="172" height="44" />
+          <text class="d-label" x="348" y="381" text-anchor="middle">App on 127.0.0.1</text>
+          <g class="stamp" transform={`translate(${stampAt(ec2).cx} ${stampAt(ec2).cy})`}>
+            <g class="stamp-body">
+              <circle r="15" />
+              <path class="cross" d="M-6 -6 L6 6 M6 -6 L-6 6" />
+              <path class="tick" d="M-7 0 L-2 5 L7 -5" />
+            </g>
+          </g>
+        </g>
+      </g>
+
+      {/* Services */}
+      {nodes.map((n) => (
+        <g class="d-node target" data-node={n.id}>
+          <rect class="d-base" x={n.x} y={n.y} width={n.w} height={n.h} />
+          <g class="d-face">
+            <rect class="d-box" x={n.x} y={n.y} width={n.w} height={n.h} />
+            <text class="d-label" x={n.x + n.w / 2} y={n.note ? n.y + 21 : n.y + 28} text-anchor="middle">{n.label}</text>
+            {n.note && <text class="d-note" x={n.x + n.w / 2} y={n.y + 37} text-anchor="middle">{n.note}</text>}
+            <g class="stamp" transform={`translate(${stampAt(n).cx} ${stampAt(n).cy})`}>
+              <g class="stamp-body">
+                <circle r="15" />
+                <path class="cross" d="M-6 -6 L6 6 M6 -6 L-6 6" />
+                <path class="tick" d="M-7 0 L-2 5 L7 -5" />
+              </g>
+            </g>
+          </g>
+        </g>
+      ))}
+    </svg>
+  </div>
+
+  <div class="sim" data-sim hidden>
+    <p class="sim-title">Try to break in</p>
+    <div class="attacks" role="group" aria-label="Attacks">
+      {attacks.map((attack) => (
+        <button type="button" class="attack" data-attack={attack.id} aria-pressed="false">
+          <span class="attack-mark" aria-hidden="true"></span>
+          {attack.label}
+        </button>
+      ))}
+    </div>
+    <div class="result" aria-live="polite" data-result>
+      <p class="result-hint">Pick an attack. The drawing shows what stops it.</p>
+    </div>
+    <p class="tally"><span data-tally>0</span> of {attacks.length} attacks tried, all stopped</p>
+  </div>
+  <figcaption class="d-caption">Fig. 2: planned architecture, from the repository's design notes</figcaption>
+</figure>
+
+<style>
+  .stamp-body {
+    opacity: 0;
+    transform: scale(0.4);
+    transition:
+      opacity var(--duration-fast) var(--ease),
+      transform var(--duration-slow) var(--ease-spring);
+  }
+
+  .stamp circle {
+    fill: var(--color-paper);
+    stroke: var(--color-accent);
+    stroke-width: var(--line-heavy);
+  }
+
+  .stamp path {
+    fill: none;
+    stroke: var(--color-accent);
+    stroke-width: var(--line-heavy);
+  }
+
+  .stamp .tick {
+    display: none;
+  }
+
+  .is-recovered .stamp .cross {
+    display: none;
+  }
+
+  .is-recovered .stamp .tick {
+    display: block;
+  }
+
+  /* While an attack is shown, everything but the defending node steps back. */
+  .target,
+  .edges {
+    transition: opacity var(--duration-base) var(--ease);
+  }
+
+  .aws.is-attacking .target:not(.is-defending),
+  .aws.is-attacking .edges {
+    opacity: 0.3;
+  }
+
+  .target.is-defending .d-face {
+    transform: translate(calc(var(--lift) * -1), calc(var(--lift) * -1));
+  }
+
+  .target.is-defending > .d-face > .d-box:not(.inner) {
+    stroke: var(--color-accent);
+    stroke-width: var(--line-heavy);
+  }
+
+  .target.is-defending .stamp-body {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  /* Simulator controls */
+  .sim {
+    margin-top: var(--space-4);
+    padding-top: var(--space-4);
+    border-top: var(--line-hair) solid var(--color-rule);
+  }
+
+  .sim[hidden] {
+    display: none;
+  }
+
+  .sim-title {
+    font-family: var(--font-display);
+    font-size: var(--text-lead);
+    font-weight: var(--weight-bold);
+  }
+
+  .attacks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-top: var(--space-3);
+  }
+
+  .attack {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    border: var(--line-regular) solid var(--color-ink);
+    border-radius: var(--radius);
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-display);
+    font-size: var(--text-small);
+    font-weight: var(--weight-bold);
+    letter-spacing: var(--tracking-ui);
+    text-align: left;
+    cursor: pointer;
+    transition:
+      background-color var(--duration-fast) var(--ease),
+      color var(--duration-fast) var(--ease),
+      transform var(--duration-slow) var(--ease-spring);
+  }
+
+  .attack:hover {
+    transform: translateY(calc(var(--lift) * -1));
+  }
+
+  .attack[aria-pressed="true"] {
+    background: var(--color-ink);
+    color: var(--color-paper);
+  }
+
+  .attack-mark {
+    width: var(--space-3);
+    height: var(--space-3);
+    border: var(--line-regular) dashed currentColor;
+  }
+
+  .attack.is-tried .attack-mark {
+    border-style: solid;
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+  }
+
+  .result {
+    margin-top: var(--space-4);
+    min-height: calc(var(--text-lead) * var(--leading-snug) + var(--text-body) * var(--leading-body) * 3);
+  }
+
+  .result-hint {
+    color: var(--color-ink-muted);
+  }
+
+  .result :global(.outcome) {
+    font-family: var(--font-display);
+    font-size: var(--text-lead);
+    font-weight: var(--weight-bold);
+    color: var(--color-accent);
+  }
+
+  .result :global(.outcome-text) {
+    margin-top: var(--space-1);
+  }
+
+  .tally {
+    margin-top: var(--space-3);
+    font-family: var(--font-display);
+    font-size: var(--text-small);
+    font-weight: var(--weight-medium);
+    letter-spacing: var(--tracking-ui);
+    color: var(--color-ink-muted);
+  }
+</style>
+
+<script>
+  import { inspect } from "../../scripts/inspect";
+
+  type Attack = { id: string; label: string; target: string; outcome: string; text: string };
+
+  for (const figure of document.querySelectorAll<HTMLElement>("[data-aws]")) {
+    const attacks: Attack[] = JSON.parse(figure.dataset.attacks ?? "[]");
+    const sim = figure.querySelector<HTMLElement>("[data-sim]");
+    const result = figure.querySelector<HTMLElement>("[data-result]");
+    const tally = figure.querySelector<HTMLElement>("[data-tally]");
+    const buttons = figure.querySelectorAll<HTMLButtonElement>("[data-attack]");
+    const tried = new Set<string>();
+    if (!sim || !result) continue;
+    sim.hidden = false;
+
+    const show = (id: string | null) => {
+      const attack = attacks.find((a) => a.id === id);
+      figure.classList.toggle("is-attacking", Boolean(attack));
+      for (const node of figure.querySelectorAll<SVGGElement>("[data-node]")) {
+        const defending = node.dataset.node === attack?.target;
+        node.classList.toggle("is-defending", defending);
+        node.classList.toggle("is-recovered", defending && attack?.id === "broken");
+      }
+      for (const button of buttons) button.setAttribute("aria-pressed", String(button.dataset.attack === id));
+
+      result.replaceChildren();
+      if (!attack) {
+        const hint = document.createElement("p");
+        hint.className = "result-hint";
+        hint.textContent = "Pick an attack. The drawing shows what stops it.";
+        result.append(hint);
+        return;
+      }
+      const outcome = document.createElement("p");
+      outcome.className = "outcome";
+      outcome.textContent = attack.outcome;
+      const text = document.createElement("p");
+      text.className = "outcome-text";
+      text.textContent = attack.text;
+      result.append(outcome, text);
+    };
+
+    for (const button of buttons) {
+      button.addEventListener("click", () => {
+        const id = button.dataset.attack ?? null;
+        const again = button.getAttribute("aria-pressed") === "true";
+        show(again ? null : id);
+        if (again || !id) return;
+        tried.add(id);
+        button.classList.add("is-tried");
+        if (tally) tally.textContent = String(tried.size);
+        inspect("attack");
+      });
+    }
+  }
+</script>

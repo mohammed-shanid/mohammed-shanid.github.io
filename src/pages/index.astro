@@ -1,0 +1,28 @@
+---
+import Base from "../layouts/Base.astro";
+import Sheet from "../components/Sheet.astro";
+import SheetBar from "../components/SheetBar.astro";
+import Crosshair from "../components/Crosshair.astro";
+import Hero from "../components/Hero.astro";
+import Projects from "../components/Projects.astro";
+import Experience from "../components/Experience.astro";
+import Skills from "../components/Skills.astro";
+import Contact from "../components/Contact.astro";
+import { profile } from "../data/profile";
+---
+<Base
+  title={`${profile.name}, DevOps and cloud engineer`}
+  description={`${profile.role}. ${profile.lede}`}
+>
+  <SheetBar />
+  <main>
+    <Sheet zones id="top">
+      <Crosshair />
+      <Hero />
+    </Sheet>
+    <Projects />
+    <Experience />
+    <Skills />
+    <Contact />
+  </main>
+</Base>

@@ -1,0 +1,200 @@
+/*
+ * Design tokens — direction A, "Drawing sheet".
+ * Every component reads from these. No one-off values elsewhere.
+ *
+ * Breakpoints (media queries cannot read custom properties, so use only these):
+ *   40rem  phone → tablet: tables and two-column rows stack
+ *   54rem  tablet → desktop: hero splits into two columns
+ *
+ * Theme: follows the system setting; [data-theme] on <html> overrides it
+ * when the visitor uses the toggle.
+ */
+
+@font-face {
+  font-family: "Barlow";
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  src: url("/fonts/barlow-400.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Barlow";
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+  src: url("/fonts/barlow-500.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Barlow Condensed";
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+  src: url("/fonts/barlow-condensed-500.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Barlow Condensed";
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+  src: url("/fonts/barlow-condensed-600.woff2") format("woff2");
+}
+
+:root {
+  /* ---- Type ------------------------------------------------------------ */
+  /* Barlow Condensed: drawing lettering for headings, labels, the title block.
+     Barlow: running text. */
+  --font-display: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+  --font-text: "Barlow", system-ui, sans-serif;
+
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-bold: 600;
+
+  /* Scale: a classical progression (11 · 14 · 17 · 20 · 24 · 32 · 48 · 72+),
+     the top two steps fluid between phone and desktop. */
+  --text-label: 0.6875rem;                          /* 11px  title-block labels   */
+  --text-small: 0.875rem;                           /* 14px  captions, notes      */
+  --text-body: 1.0625rem;                           /* 17px  running text         */
+  --text-lead: 1.25rem;                             /* 20px  lede, card titles    */
+  --text-subhead: clamp(1.25rem, 1rem + 0.9vw, 1.75rem); /* 20→28px  role line */
+  --text-h3: 2rem;                                  /* 32px                       */
+  --text-h2: clamp(2.25rem, 1.6rem + 2.4vw, 3rem);  /* 36→48px section headings   */
+  --text-display: clamp(3.5rem, 1.6rem + 6.4vw, 7rem); /* 56→112px name        */
+
+  /* Text inside SVG drawings, in drawing units (scales with the drawing). */
+  --drawing-note: 13px;
+  --drawing-label: 15px;
+  /* Phone sizes for diagrams that shrink to ~65% of their drawn width. */
+  --drawing-note-compact: 17px;
+  --drawing-label-compact: 19px;
+
+  --leading-tight: 0.92;
+  --leading-snug: 1.2;
+  --leading-body: 1.55;
+
+  --tracking-display: -0.01em;
+  --tracking-label: 0.06em;
+  --tracking-ui: 0.03em;
+
+  --measure: 34em;                                  /* max line length for text  */
+  --label-column: 9rem;                             /* left label column in tables */
+  --content-max: 60rem;                             /* text-only blocks on wide screens */
+
+  /* ---- Space ----------------------------------------------------------- */
+  /* 4px base. The 24px step is also the drawing-grid module. */
+  --space-1: 0.25rem;   /* 4   */
+  --space-2: 0.5rem;    /* 8   */
+  --space-3: 0.75rem;   /* 12  */
+  --space-4: 1rem;      /* 16  */
+  --space-5: 1.5rem;    /* 24  */
+  --space-6: 2rem;      /* 32  */
+  --space-7: 3rem;      /* 48  */
+  --space-8: 4rem;      /* 64  */
+  --space-9: 6rem;      /* 96  */
+  --space-10: 8rem;     /* 128 */
+
+  --grid-module: var(--space-5);
+  --gutter: var(--space-4);                         /* page side margin, phone   */
+  --sheet-pad: var(--space-4);                      /* inside the sheet border   */
+  --mark-size: clamp(6rem, 13vw, 11rem);            /* tool logos behind sheets  */
+
+  /* ---- Lines, radius, shadow ------------------------------------------- */
+  /* A drawing has no rounded corners and no shadows: depth comes from line
+     weight. Both tokens exist so nothing invents its own. */
+  --line-hair: 1px;
+  --line-regular: 1.5px;
+  --line-heavy: 2px;
+  --radius: 0;
+  --shadow: none;
+
+  /* ---- Motion ---------------------------------------------------------- */
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --duration-slow: 420ms;                           /* spring settles, line draws */
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1); /* overshoots, then settles  */
+  --tilt-max: 4deg;                                 /* pointer tilt on the drawing */
+  --perspective: 1000px;                            /* depth for the tilt         */
+  --lift: 4px;                                      /* how far a stage pops up    */
+
+}
+
+/* ---- Colour: light (paper) --------------------------------------------- */
+/* Contrast ratios are against --color-paper. [data-theme] works on any
+   element, so the styleguide can show both themes side by side. */
+:root,
+[data-theme="light"] {
+  --color-paper: #e6e3da;      /* warm stone ground                          */
+  --color-ink: #1e2420;        /* green-black text and frame lines           */
+  --color-ink-muted: #4a524c;  /* secondary text                             */
+  --color-rule: rgb(30 36 32 / 0.22);  /* hairlines, dividers (decorative)   */
+  --color-grid: rgb(30 36 32 / 0.05);  /* drawing grid (decorative)          */
+  --color-accent: #2e5e3e;     /* forest green: "passed", live status, focus */
+  color-scheme: light;
+}
+
+/* ---- Colour: dark (blueprint at night) --------------------------------- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-paper: #141815;
+    --color-ink: #e2e0d8;
+    --color-ink-muted: #a9aea6;
+    --color-rule: rgb(226 224 216 / 0.22);
+    --color-grid: rgb(226 224 216 / 0.04);
+    --color-accent: #86b892;
+    color-scheme: dark;
+  }
+}
+[data-theme="dark"] {
+  --color-paper: #141815;
+  --color-ink: #e2e0d8;
+  --color-ink-muted: #a9aea6;
+  --color-rule: rgb(226 224 216 / 0.22);
+  --color-grid: rgb(226 224 216 / 0.04);
+  --color-accent: #86b892;
+  color-scheme: dark;
+}
+
+/* ---- Inverse: a whole sheet in the opposite theme (the contact sheet) ---- */
+.inverse {
+  --color-paper: #1e2420;
+  --color-ink: #e6e3da;
+  --color-ink-muted: #b4b8b0;
+  --color-rule: rgb(230 227 218 / 0.24);
+  --color-grid: rgb(230 227 218 / 0.05);
+  --color-accent: #8cc39b;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .inverse {
+    --color-paper: #e2e0d8;
+    --color-ink: #141815;
+    --color-ink-muted: #474f49;
+    --color-rule: rgb(20 24 21 / 0.22);
+    --color-grid: rgb(20 24 21 / 0.05);
+    --color-accent: #2b5a3b;
+  }
+}
+[data-theme="dark"] .inverse {
+  --color-paper: #e2e0d8;
+  --color-ink: #141815;
+  --color-ink-muted: #474f49;
+  --color-rule: rgb(20 24 21 / 0.22);
+  --color-grid: rgb(20 24 21 / 0.05);
+  --color-accent: #2b5a3b;
+}
+
+@media (min-width: 54rem) {
+  :root {
+    --gutter: var(--space-4);
+    --sheet-pad: var(--space-5);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+    --duration-base: 0ms;
+    --duration-slow: 0ms;
+    --tilt-max: 0deg;
+  }
+}

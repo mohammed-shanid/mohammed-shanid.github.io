@@ -1,0 +1,227 @@
+---
+// One project write-up, laid out like the notes table on a drawing:
+// problem → what I built → stack → outcome → links.
+// An optional "figure" slot puts the project's diagram beside the notes.
+import Tag from "./Tag.astro";
+
+interface Props {
+  id?: string;
+  title: string;
+  summary: string;
+  status: { label: string; variant: "done" | "progress" };
+  problem: string;
+  built: readonly string[];
+  stack: readonly string[];
+  outcome: string;
+  links: readonly { label: string; href: string }[];
+  index?: string;
+}
+
+const { id, title, summary, status, problem, built, stack, outcome, links, index } = Astro.props;
+const hasFigure = Astro.slots.has("figure");
+---
+<article class:list={["project", { "has-figure": hasFigure }]} id={id} aria-labelledby={id && `${id}-title`} data-trace-scope={title}>
+  <header class="head">
+    <div class="heading">
+      {index && <span class="index" aria-hidden="true">{index}</span>}
+      <div>
+        <h3 class="title" id={id && `${id}-title`}>{title}</h3>
+        <p class="summary">{summary}</p>
+      </div>
+    </div>
+    <Tag variant={status.variant}>{status.label}</Tag>
+  </header>
+
+  <div class="body">
+    <dl class="notes">
+      <div class="row">
+        <dt>Problem</dt>
+        <dd>{problem}</dd>
+      </div>
+      <div class="row">
+        <dt>What I built</dt>
+        <dd>
+          <ul class="built">
+            {built.map((item) => <li>{item}</li>)}
+          </ul>
+        </dd>
+      </div>
+      <div class="row">
+        <dt>Stack</dt>
+        <dd>
+          <ul class="stack" role="list">
+            {stack.map((item) => <li><Tag tool={item}>{item}</Tag></li>)}
+          </ul>
+        </dd>
+      </div>
+      <div class="row">
+        <dt>Outcome</dt>
+        <dd>{outcome}</dd>
+      </div>
+      <div class="row links-row">
+        <dt>Links</dt>
+        <dd class="links">
+          {links.map((link) => <a href={link.href}>{link.label}</a>)}
+        </dd>
+      </div>
+    </dl>
+
+    {hasFigure && (
+      <div class="figure">
+        <slot name="figure" />
+      </div>
+    )}
+  </div>
+</article>
+
+<style>
+  .project {
+    max-width: var(--content-max);
+    border: var(--line-regular) solid var(--color-ink);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    background: var(--color-paper);
+    scroll-margin-top: var(--space-6);
+  }
+
+  .project.has-figure {
+    max-width: none;
+  }
+
+  .head {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    gap: var(--space-4);
+    padding: var(--space-5);
+    border-bottom: var(--line-regular) solid var(--color-ink);
+  }
+
+  .heading {
+    display: flex;
+    gap: var(--space-4);
+    align-items: baseline;
+  }
+
+  .index {
+    font-family: var(--font-display);
+    font-size: var(--text-h3);
+    font-weight: var(--weight-medium);
+    line-height: var(--leading-tight);
+    color: var(--color-ink-muted);
+  }
+
+  .title {
+    font-size: var(--text-h3);
+    line-height: var(--leading-tight);
+  }
+
+  .summary {
+    margin-top: var(--space-2);
+    font-size: var(--text-lead);
+    line-height: var(--leading-snug);
+  }
+
+  .has-figure .body {
+    display: grid;
+    grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
+  }
+
+  .figure {
+    padding: var(--space-5);
+    border-left: var(--line-hair) solid var(--color-rule);
+  }
+
+  /* The card cell is the frame; the diagram doesn't need a second one. */
+  .figure :global(.d-figure) {
+    border: 0;
+    padding: 0;
+    background: none;
+  }
+
+  .notes .row {
+    display: grid;
+    grid-template-columns: var(--label-column) minmax(0, 1fr);
+    border-bottom: var(--line-hair) solid var(--color-rule);
+  }
+
+  .notes .row:last-child {
+    border-bottom: 0;
+  }
+
+  .notes dt,
+  .notes dd {
+    padding: var(--space-4) var(--space-5);
+  }
+
+  .notes dt {
+    border-right: var(--line-hair) solid var(--color-rule);
+    font-family: var(--font-display);
+    font-weight: var(--weight-medium);
+    color: var(--color-ink-muted);
+    letter-spacing: var(--tracking-ui);
+  }
+
+  .notes dd {
+    max-width: calc(var(--measure) + 2 * var(--space-5));
+  }
+
+  .built {
+    padding-left: var(--space-4);
+  }
+
+  .built li + li {
+    margin-top: var(--space-2);
+  }
+
+  .stack {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .links {
+    display: flex;
+    flex-wrap: wrap;
+    column-gap: var(--space-5);
+    row-gap: var(--space-2);
+    font-family: var(--font-display);
+    font-weight: var(--weight-bold);
+    letter-spacing: var(--tracking-ui);
+  }
+
+  @media (max-width: 54rem) {
+    .has-figure .body {
+      grid-template-columns: 1fr;
+    }
+
+    .figure {
+      border-left: 0;
+      border-top: var(--line-hair) solid var(--color-rule);
+    }
+  }
+
+  @media (max-width: 40rem) {
+    .head {
+      flex-direction: column-reverse;
+      padding: var(--space-4);
+    }
+
+    .notes .row {
+      grid-template-columns: 1fr;
+    }
+
+    .notes dt {
+      border-right: 0;
+      padding: var(--space-3) var(--space-4) 0;
+    }
+
+    .notes dd {
+      padding: var(--space-1) var(--space-4) var(--space-4);
+    }
+
+    .figure {
+      padding: var(--space-3);
+    }
+  }
+</style>

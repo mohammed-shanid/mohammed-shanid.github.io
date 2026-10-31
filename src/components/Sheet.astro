@@ -1,0 +1,120 @@
+---
+// A drawing sheet: heavy border, faint grid, ruler ticks along the top and left
+// edges, and (on the first sheet) zone references. `inverse` flips the theme.
+interface Props {
+  zones?: boolean;
+  inverse?: boolean;
+  id?: string;
+  label?: string;
+}
+
+const { zones = false, inverse = false, id, label } = Astro.props;
+---
+<div class:list={["sheet", { inverse }]} id={id} aria-label={label} role={label ? "region" : undefined}>
+  <div class="ruler top" aria-hidden="true"></div>
+  <div class="ruler left" aria-hidden="true"></div>
+  {zones && (
+    <div class="zones" aria-hidden="true">
+      {["1", "2", "3", "4"].map((n, i) => (
+        <span class="col" style={`left: ${12.5 + i * 25}%`}>{n}</span>
+      ))}
+      {["A", "B", "C"].map((n, i) => (
+        <span class="row" style={`top: ${20 + i * 30}%`}>{n}</span>
+      ))}
+    </div>
+  )}
+  <slot />
+</div>
+
+<style>
+  .sheet {
+    position: relative;
+    margin: var(--gutter);
+    border: var(--line-regular) solid var(--color-ink);
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    background-image:
+      linear-gradient(var(--color-grid) var(--line-hair), transparent var(--line-hair)),
+      linear-gradient(90deg, var(--color-grid) var(--line-hair), transparent var(--line-hair));
+    background-size: var(--grid-module) var(--grid-module);
+    scroll-margin-top: var(--gutter);
+    /* Lets tool marks (z-index -1) sit above the grid but behind the content */
+    isolation: isolate;
+  }
+
+  .sheet + :global(.sheet) {
+    margin-top: var(--space-7);
+  }
+
+  /* Ruler: a short tick every grid module, a long one every four. */
+  .ruler {
+    position: absolute;
+    pointer-events: none;
+    --tick: var(--color-ink-muted);
+  }
+
+  .ruler.top {
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--space-3);
+    background-image:
+      linear-gradient(90deg, var(--tick) var(--line-hair), transparent var(--line-hair)),
+      linear-gradient(90deg, var(--tick) var(--line-hair), transparent var(--line-hair));
+    background-size:
+      calc(var(--grid-module) * 4) var(--space-3),
+      var(--grid-module) var(--space-2);
+    background-repeat: repeat-x;
+    opacity: 0.6;
+  }
+
+  .ruler.left {
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: var(--space-3);
+    background-image:
+      linear-gradient(var(--tick) var(--line-hair), transparent var(--line-hair)),
+      linear-gradient(var(--tick) var(--line-hair), transparent var(--line-hair));
+    background-size:
+      var(--space-3) calc(var(--grid-module) * 4),
+      var(--space-2) var(--grid-module);
+    background-repeat: repeat-y;
+    opacity: 0.6;
+  }
+
+  .zones {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    font-family: var(--font-display);
+    font-size: var(--text-label);
+    font-weight: var(--weight-medium);
+    color: var(--color-ink-muted);
+  }
+
+  .col,
+  .row {
+    position: absolute;
+    line-height: 1;
+  }
+
+  .col {
+    top: calc(var(--gutter) * -1 + var(--space-1));
+  }
+
+  .row {
+    left: calc(var(--gutter) * -1 + var(--space-1));
+  }
+
+  @media (max-width: 40rem) {
+    .zones,
+    .ruler.left {
+      display: none;
+    }
+
+    .sheet + :global(.sheet) {
+      margin-top: var(--space-6);
+    }
+  }
+</style>

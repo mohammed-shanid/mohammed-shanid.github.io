@@ -1,0 +1,113 @@
+---
+// Sheet 1: name, role and proof on the left; the pipeline drawing on the right;
+// the title block in the bottom-right corner, as on an engineering drawing.
+import Button from "./Button.astro";
+import PipelineDrawing from "./PipelineDrawing.astro";
+import TitleBlock from "./TitleBlock.astro";
+import { profile } from "../data/profile";
+---
+<section class="hero" aria-labelledby="hero-name">
+  <div class="intro">
+    <h1 id="hero-name" class="name">
+      {profile.name.split(" ").map((word) => <span>{word}</span>)}
+    </h1>
+    <p class="role">{profile.role}</p>
+    <p class="lede">{profile.lede}</p>
+    <div class="actions">
+      <Button href="#projects">See projects</Button>
+      <a href={profile.links.github}>GitHub</a>
+      <a href={profile.links.linkedin}>LinkedIn</a>
+    </div>
+    <p class="explore">
+      Eight parts of this page respond when you use them. The inspection log at the top keeps count.
+    </p>
+  </div>
+
+  <div class="figure">
+    <PipelineDrawing />
+  </div>
+
+  <div class="title">
+    <TitleBlock />
+  </div>
+</section>
+
+<style>
+  .hero {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    grid-template-areas:
+      "intro figure"
+      "title title";
+    column-gap: var(--space-7);
+    row-gap: var(--space-7);
+    padding: var(--space-8) var(--sheet-pad) var(--sheet-pad);
+  }
+
+  .intro {
+    grid-area: intro;
+    align-self: center;
+  }
+
+  .figure {
+    grid-area: figure;
+  }
+
+  .title {
+    grid-area: title;
+    justify-self: end;
+  }
+
+  .name {
+    font-size: var(--text-display);
+    line-height: var(--leading-tight);
+  }
+
+  .name span {
+    display: block;
+  }
+
+  .role {
+    margin-top: var(--space-4);
+    font-family: var(--font-display);
+    font-size: var(--text-subhead);
+    font-weight: var(--weight-medium);
+    line-height: var(--leading-snug);
+  }
+
+  .lede {
+    margin-top: var(--space-5);
+  }
+
+  .explore {
+    margin-top: var(--space-6);
+    padding-left: var(--space-3);
+    border-left: var(--line-heavy) solid var(--color-accent);
+    font-size: var(--text-small);
+    color: var(--color-ink-muted);
+  }
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-5);
+    margin-top: var(--space-6);
+  }
+
+  @media (max-width: 54rem) {
+    .hero {
+      grid-template-columns: 1fr;
+      grid-template-areas:
+        "intro"
+        "figure"
+        "title";
+      row-gap: var(--space-6);
+      padding-top: var(--space-6);
+    }
+
+    .title {
+      justify-self: stretch;
+    }
+  }
+</style>

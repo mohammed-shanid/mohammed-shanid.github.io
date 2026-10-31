@@ -1,0 +1,406 @@
+---
+// Skills as a drawing's parts list (bill of materials). Each group links to the
+// work where it was used, so every skill has evidence on this page.
+import Sheet from "./Sheet.astro";
+import ToolMark from "./ToolMark.astro";
+import SectionHead from "./SectionHead.astro";
+import Tag from "./Tag.astro";
+import { skills, credentials } from "../data/profile";
+import { toolKey } from "../data/tools";
+
+const evidence: Record<string, string> = {
+  "Regency Electricals": "#rev-d",
+  "hi-ideal": "#rev-c",
+  InLighnX: "#rev-b",
+  "AWS Deployment Pipeline": "#aws",
+  ContractRail: "#contractrail",
+  MedRAGShield: "#medragshield",
+  "B.Tech": "#credentials",
+};
+---
+<Sheet id="skills">
+  <ToolMark tool="kubernetes" />
+  <section aria-labelledby="skills-title">
+    <SectionHead
+      id="skills-title"
+      title="Skills"
+      sheet={4}
+      of={5}
+      intro="A parts list. Select any part to trace where it was used across this page."
+    />
+    <div class="wrap" data-tracer>
+      <div class="trace-result" aria-live="polite" data-trace-result>
+        <p class="trace-hint">No part selected. Try Docker, Python or GitHub Actions.</p>
+      </div>
+      <table class="bom">
+        <caption class="visually-hidden">Skills by group, with where each group was used</caption>
+        <thead>
+          <tr>
+            <th scope="col">Item</th>
+            <th scope="col">Group</th>
+            <th scope="col">Parts</th>
+            <th scope="col">Used in</th>
+          </tr>
+        </thead>
+        <tbody>
+          {skills.map((row) => (
+            <tr>
+              <td class="item">{row.item}</td>
+              <th scope="row" class="group">{row.group}</th>
+              <td>
+                <ul class="parts" role="list">
+                  {row.parts.map((part) => (
+                    <li>
+                      <button class="trace" type="button" aria-pressed="false" data-trace={toolKey(part)} data-name={part}>
+                        <Tag tool={part}>{part}</Tag>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </td>
+              <td class="used">
+                <span class="used-label">Used in</span>
+                <ul role="list">
+                  {row.usedIn.map((place) => (
+                    <li><a href={evidence[place]}>{place}</a></li>
+                  ))}
+                </ul>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      <dl class="credentials" id="credentials">
+        {credentials.map((c) => (
+          <div class="credential">
+            <dt>{c.label}</dt>
+            <dd>{c.value}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  </section>
+</Sheet>
+
+<script>
+  import { inspect } from "../scripts/inspect";
+
+  for (const tracer of document.querySelectorAll<HTMLElement>("[data-tracer]")) {
+    const result = tracer.querySelector<HTMLElement>("[data-trace-result]");
+    const buttons = tracer.querySelectorAll<HTMLButtonElement>("[data-trace]");
+    if (!result) continue;
+
+    const clear = () => {
+      for (const tag of document.querySelectorAll(".is-traced")) tag.classList.remove("is-traced");
+      for (const button of buttons) button.setAttribute("aria-pressed", "false");
+      result.classList.remove("is-active");
+      const hint = document.createElement("p");
+      hint.className = "trace-hint";
+      hint.textContent = "No part selected. Try Docker, Python or GitHub Actions.";
+      result.replaceChildren(hint);
+    };
+
+    const trace = (key: string, name: string) => {
+      clear();
+      const matches = [...document.querySelectorAll<HTMLElement>(`[data-tool="${CSS.escape(key)}"]`)];
+      for (const tag of matches) tag.classList.add("is-traced");
+      for (const button of buttons) button.setAttribute("aria-pressed", String(button.dataset.trace === key));
+
+      // Where else on the page it appears: projects and roles, not the parts list itself.
+      const places = new Map<string, string>();
+      for (const tag of matches) {
+        if (tracer.contains(tag)) continue;
+        const scope = tag.closest<HTMLElement>("[data-trace-scope]");
+        if (scope?.id) places.set(scope.id, scope.dataset.traceScope ?? scope.id);
+      }
+
+      result.classList.add("is-active");
+      const label = document.createElement("span");
+      label.className = "trace-name";
+      label.textContent = name;
+      const summary = document.createElement("span");
+      summary.textContent = places.size
+        ? `appears in ${places.size} ${places.size === 1 ? "place" : "places"}:`
+        : "is listed here; its group's Used in column shows where.";
+      const list = document.createElement("span");
+      list.className = "trace-places";
+      for (const [id, title] of places) {
+        const link = document.createElement("a");
+        link.href = `#${id}`;
+        link.textContent = title;
+        list.append(link);
+      }
+      const reset = document.createElement("button");
+      reset.type = "button";
+      reset.className = "trace-clear";
+      reset.textContent = "Clear";
+      reset.addEventListener("click", clear);
+      result.replaceChildren(label, summary, list, reset);
+      inspect("trace");
+    };
+
+    for (const button of buttons) {
+      button.addEventListener("click", () => {
+        if (button.getAttribute("aria-pressed") === "true") clear();
+        else trace(button.dataset.trace ?? "", button.dataset.name ?? "");
+      });
+    }
+  }
+</script>
+
+<style>
+  .wrap {
+    padding: 0 var(--sheet-pad) var(--space-8);
+  }
+
+  .bom {
+    width: 100%;
+    border-collapse: collapse;
+    border: var(--line-regular) solid var(--color-ink);
+    background: var(--color-paper);
+  }
+
+  thead th {
+    padding: var(--space-2) var(--space-4);
+    border-bottom: var(--line-regular) solid var(--color-ink);
+    font-family: var(--font-display);
+    font-size: var(--text-label);
+    font-weight: var(--weight-medium);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    text-align: left;
+    color: var(--color-ink-muted);
+  }
+
+  td,
+  tbody th {
+    padding: var(--space-4);
+    border-bottom: var(--line-hair) solid var(--color-rule);
+    vertical-align: top;
+    text-align: left;
+  }
+
+  tbody tr:last-child td,
+  tbody tr:last-child th {
+    border-bottom: 0;
+  }
+
+  thead th + th,
+  tbody tr > * + * {
+    border-left: var(--line-hair) solid var(--color-rule);
+  }
+
+  .item {
+    width: var(--space-8);
+    font-family: var(--font-display);
+    font-size: var(--text-lead);
+    font-weight: var(--weight-bold);
+    text-align: center;
+    color: var(--color-ink-muted);
+  }
+
+  .group {
+    width: var(--label-column);
+    font-family: var(--font-display);
+    font-size: var(--text-lead);
+    font-weight: var(--weight-bold);
+    line-height: var(--leading-snug);
+  }
+
+  .parts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .trace {
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+  }
+
+  .trace:hover :global(.tag) {
+    border-color: var(--color-ink);
+  }
+
+  /* The trace result: a strip above the table, like a note on the drawing */
+  .trace-result {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-2) var(--space-4);
+    min-height: calc(var(--space-7) + var(--line-regular) * 2);
+    margin-bottom: var(--space-4);
+    padding: var(--space-3) var(--space-4);
+    border: var(--line-regular) dashed var(--color-ink-muted);
+    background: var(--color-paper);
+  }
+
+  .trace-result.is-active {
+    border-style: solid;
+    border-color: var(--color-accent);
+  }
+
+  .trace-hint {
+    color: var(--color-ink-muted);
+  }
+
+  .trace-result :global(.trace-name) {
+    font-family: var(--font-display);
+    font-size: var(--text-lead);
+    font-weight: var(--weight-bold);
+    color: var(--color-accent);
+  }
+
+  .trace-result :global(.trace-places) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-4);
+    font-family: var(--font-display);
+    font-weight: var(--weight-bold);
+    letter-spacing: var(--tracking-ui);
+  }
+
+  .trace-result :global(.trace-clear) {
+    margin-left: auto;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--color-ink-muted);
+    font: inherit;
+    font-size: var(--text-small);
+    text-decoration: underline;
+    text-underline-offset: 0.25em;
+    cursor: pointer;
+  }
+
+  .used {
+    width: calc(var(--label-column) * 1.6);
+    font-family: var(--font-display);
+    font-weight: var(--weight-medium);
+    letter-spacing: var(--tracking-ui);
+  }
+
+  .used li + li {
+    margin-top: var(--space-1);
+  }
+
+  /* Only on phones, where the column headers are hidden. */
+  .used-label {
+    display: none;
+    font-size: var(--text-label);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--color-ink-muted);
+  }
+
+  tbody tr {
+    transition: background-color var(--duration-fast) var(--ease);
+  }
+
+  tbody tr:hover {
+    background: var(--color-grid);
+  }
+
+  .credentials {
+    margin-top: var(--space-6);
+    border: var(--line-regular) solid var(--color-ink);
+    background: var(--color-paper);
+    scroll-margin-top: var(--space-6);
+  }
+
+  .credential {
+    display: grid;
+    grid-template-columns: var(--label-column) minmax(0, 1fr);
+    border-bottom: var(--line-hair) solid var(--color-rule);
+  }
+
+  .credential:last-child {
+    border-bottom: 0;
+  }
+
+  .credential dt,
+  .credential dd {
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .credential dt {
+    border-right: var(--line-hair) solid var(--color-rule);
+    font-family: var(--font-display);
+    font-weight: var(--weight-medium);
+    letter-spacing: var(--tracking-ui);
+    color: var(--color-ink-muted);
+  }
+
+  @media (max-width: 54rem) {
+    .bom thead {
+      display: none;
+    }
+
+    .bom tr {
+      display: grid;
+      grid-template-columns: var(--space-7) minmax(0, 1fr);
+      border-bottom: var(--line-hair) solid var(--color-rule);
+    }
+
+    .bom tr:last-child {
+      border-bottom: 0;
+    }
+
+    .bom td,
+    .bom tbody th {
+      border: 0;
+      padding: var(--space-3);
+    }
+
+    .bom tbody tr > * + * {
+      border-left: 0;
+    }
+
+    .item {
+      grid-row: span 3;
+      width: auto;
+      border-right: var(--line-hair) solid var(--color-rule) !important;
+    }
+
+    .group,
+    .used {
+      width: auto;
+    }
+
+    .group {
+      padding-bottom: 0;
+    }
+
+    .used-label {
+      display: block;
+    }
+
+    .used ul {
+      display: flex;
+      flex-wrap: wrap;
+      column-gap: var(--space-4);
+    }
+
+    .used li + li {
+      margin-top: 0;
+    }
+  }
+
+  @media (max-width: 40rem) {
+    .wrap {
+      padding-bottom: var(--space-6);
+    }
+
+    .credential {
+      grid-template-columns: 1fr;
+    }
+
+    .credential dt {
+      border-right: 0;
+      padding-bottom: 0;
+    }
+  }
+</style>

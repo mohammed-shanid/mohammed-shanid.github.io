@@ -1,0 +1,54 @@
+---
+// Switches between light and dark. Without a saved choice the page follows the system.
+---
+<button class="theme-toggle" type="button" aria-pressed="false" data-theme-toggle>
+  Dark mode
+</button>
+
+<style>
+  .theme-toggle {
+    padding: var(--space-1) 0;
+    background: none;
+    border: 0;
+    border-bottom: var(--line-hair) solid currentColor;
+    border-radius: var(--radius);
+    color: var(--color-ink);
+    font-family: var(--font-display);
+    font-size: var(--text-body);
+    font-weight: var(--weight-medium);
+    letter-spacing: var(--tracking-ui);
+    line-height: var(--leading-snug);
+    cursor: pointer;
+  }
+
+  .theme-toggle:hover {
+    color: var(--color-accent);
+  }
+</style>
+
+<script>
+  import { inspect } from "../scripts/inspect";
+
+  const root = document.documentElement;
+  const buttons = document.querySelectorAll<HTMLButtonElement>("[data-theme-toggle]");
+  const isDark = () =>
+    root.dataset.theme
+      ? root.dataset.theme === "dark"
+      : window.matchMedia("(prefers-color-scheme: dark)").matches;
+  const sync = () => {
+    for (const button of buttons) button.setAttribute("aria-pressed", String(isDark()));
+  };
+
+  sync();
+  for (const button of buttons) {
+    button.addEventListener("click", () => {
+      const next = isDark() ? "light" : "dark";
+      root.dataset.theme = next;
+      try {
+        localStorage.setItem("theme", next);
+      } catch {}
+      sync();
+      inspect("theme");
+    });
+  }
+</script>

@@ -1,0 +1,66 @@
+---
+// A tool's logo traced in hairline behind a sheet, like a part outline on a
+// drawing. Decorative: the tool is named in the content in front of it. The
+// skill tracer lights it when that tool is traced.
+import { toolMarks, type ToolMarkKey } from "../data/toolMarks";
+
+interface Props {
+  tool: ToolMarkKey;
+  /** Position in the row of marks, counted from the right */
+  index?: number;
+}
+
+const { tool, index = 0 } = Astro.props;
+---
+<div class="frame" aria-hidden="true">
+  <svg class="mark" style={`--i: ${index}`} viewBox="0 0 24 24" focusable="false" data-tool={tool}>
+    <path d={toolMarks[tool].path} />
+  </svg>
+</div>
+
+<style>
+  /* Fills the sheet and crops the mark at its border */
+  .frame {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    overflow: clip;
+    pointer-events: none;
+  }
+
+  /* In the open space of the section heading, left of the sheet number,
+     lined up from the right like stamps on a drawing */
+  .mark {
+    position: absolute;
+    top: var(--space-5);
+    right: calc(var(--sheet-pad) + var(--space-10) + var(--i) * (var(--mark-size) + var(--space-5)));
+    width: var(--mark-size);
+    height: var(--mark-size);
+    fill: none;
+    stroke: var(--color-rule);
+    stroke-width: var(--line-regular);
+    vector-effect: non-scaling-stroke;
+    transition:
+      stroke var(--duration-base) var(--ease),
+      transform var(--duration-slow) var(--ease-spring);
+  }
+
+  .mark path {
+    vector-effect: non-scaling-stroke;
+  }
+
+  /* Phones: the heading fills the width, so the marks shrink into the
+     heading's top padding, above the sheet number */
+  @media (max-width: 40rem) {
+    .mark {
+      --mark-size: var(--space-7);
+      top: var(--space-1);
+      right: calc(var(--sheet-pad) + var(--i) * (var(--mark-size) + var(--space-2)));
+    }
+  }
+
+  .mark:global(.is-traced) {
+    stroke: var(--color-accent);
+    transform: translateY(calc(var(--lift) * -1));
+  }
+</style>

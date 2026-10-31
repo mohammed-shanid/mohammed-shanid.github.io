@@ -1,0 +1,152 @@
+---
+// The drawing's title block. The last cell is live: the latest CI result on
+// ContractRail's main branch, read from the GitHub API in the browser.
+import { profile, liveCi } from "../data/profile";
+
+const actionsUrl = `https://github.com/${liveCi.repo}/actions`;
+---
+<dl class="title-block">
+  <div class="cell">
+    <dt>Drawn by</dt>
+    <dd>{profile.fullName}</dd>
+  </div>
+  <div class="cell">
+    <dt>Based</dt>
+    <dd>{profile.location}</dd>
+  </div>
+  <div class="cell">
+    <dt>Degree</dt>
+    <dd>{profile.degree}</dd>
+  </div>
+  <div class="cell">
+    <dt>Status</dt>
+    <dd class="ok">{profile.status}</dd>
+  </div>
+  <div
+    class="cell live"
+    data-live-ci
+    data-repo={liveCi.repo}
+    data-branch={liveCi.branch}
+  >
+    <dt>{liveCi.label}, live</dt>
+    <dd>
+      <span class="dot" data-ci-dot aria-hidden="true"></span>
+      <a href={actionsUrl} data-ci-link>
+        <span data-ci-status>{liveCi.fallback.status[0].toUpperCase() + liveCi.fallback.status.slice(1)}</span>{" at "}<span data-ci-sha>{liveCi.fallback.sha}</span>
+      </a>
+    </dd>
+  </div>
+</dl>
+
+<style>
+  .title-block {
+    display: grid;
+    grid-template-columns: repeat(5, auto);
+    border: var(--line-regular) solid var(--color-ink);
+    background: var(--color-paper);
+  }
+
+  .cell {
+    padding: var(--space-2) var(--space-4);
+    border-left: var(--line-hair) solid var(--color-rule);
+  }
+
+  .cell:first-child {
+    border-left: 0;
+  }
+
+  dt {
+    font-family: var(--font-display);
+    font-size: var(--text-label);
+    font-weight: var(--weight-medium);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--color-ink-muted);
+  }
+
+  dd {
+    margin-top: var(--space-1);
+    font-family: var(--font-display);
+    font-size: var(--text-body);
+    font-weight: var(--weight-bold);
+    line-height: var(--leading-snug);
+  }
+
+  .ok {
+    color: var(--color-accent);
+  }
+
+  .live dd {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .live a {
+    text-decoration-color: var(--color-rule);
+  }
+
+  .dot {
+    width: var(--space-2);
+    height: var(--space-2);
+    border-radius: 50%;
+    background: var(--color-accent);
+    flex: none;
+  }
+
+  .dot.is-failing {
+    background: none;
+    border: var(--line-regular) solid var(--color-ink);
+  }
+
+  .dot.is-running {
+    background: none;
+    border: var(--line-regular) dashed var(--color-accent);
+  }
+
+  @media (max-width: 54rem) {
+    .title-block {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    /* Name across the top, then a pair, then status and CI on their own rows. */
+    .cell:first-child,
+    .cell:nth-child(4),
+    .live {
+      grid-column: 1 / -1;
+    }
+
+    .cell:nth-child(even),
+    .live {
+      border-left: 0;
+    }
+
+    .cell:nth-child(n + 2) {
+      border-top: var(--line-hair) solid var(--color-rule);
+    }
+  }
+</style>
+
+<script>
+  // Read the latest run on the branch; keep the last checked result if this fails.
+  for (const cell of document.querySelectorAll<HTMLElement>("[data-live-ci]")) {
+    const { repo, branch } = cell.dataset;
+    fetch(`https://api.github.com/repos/${repo}/actions/runs?per_page=1&branch=${branch}`)
+      .then((response) => (response.ok ? response.json() : Promise.reject(response.status)))
+      .then(({ workflow_runs: [run] }) => {
+        if (!run) return;
+        const state =
+          run.status !== "completed" ? "running" : run.conclusion === "success" ? "passing" : "failing";
+        const statusEl = cell.querySelector("[data-ci-status]");
+        const shaEl = cell.querySelector("[data-ci-sha]");
+        const link = cell.querySelector<HTMLAnchorElement>("[data-ci-link]");
+        const dot = cell.querySelector("[data-ci-dot]");
+        if (statusEl) statusEl.textContent = state[0].toUpperCase() + state.slice(1);
+        if (shaEl) shaEl.textContent = run.head_sha.slice(0, 7);
+        if (link) link.href = run.html_url;
+        dot?.classList.toggle("is-failing", state === "failing");
+        dot?.classList.toggle("is-running", state === "running");
+      })
+      .catch(() => {});
+  }
+</script>

@@ -1,0 +1,97 @@
+---
+// A drafting crosshair over the first sheet: thin lines follow the pointer and a
+// readout gives the zone (A1–C4, matching the sheet's edge markers) and position.
+// Mouse and trackpad only; it never takes clicks.
+---
+<div class="crosshair" data-crosshair aria-hidden="true">
+  <span class="line h" data-h></span>
+  <span class="line v" data-v></span>
+  <span class="readout" data-readout></span>
+</div>
+
+<style>
+  .crosshair {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity var(--duration-base) var(--ease);
+  }
+
+  .crosshair.is-on {
+    opacity: 1;
+  }
+
+  .line {
+    position: absolute;
+    background: var(--color-rule);
+  }
+
+  .h {
+    left: 0;
+    right: 0;
+    top: 0;
+    height: var(--line-hair);
+  }
+
+  .v {
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: var(--line-hair);
+  }
+
+  .readout {
+    position: absolute;
+    top: 0;
+    left: 0;
+    padding: var(--space-1) var(--space-2);
+    border: var(--line-hair) solid var(--color-accent);
+    background: var(--color-paper);
+    color: var(--color-accent);
+    font-family: var(--font-display);
+    font-size: var(--text-small);
+    font-weight: var(--weight-bold);
+    letter-spacing: var(--tracking-ui);
+    font-variant-numeric: tabular-nums;
+    white-space: pre;
+  }
+</style>
+
+<script>
+  const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)");
+
+  for (const overlay of document.querySelectorAll<HTMLElement>("[data-crosshair]")) {
+    const sheet = overlay.parentElement;
+    const h = overlay.querySelector<HTMLElement>("[data-h]");
+    const v = overlay.querySelector<HTMLElement>("[data-v]");
+    const readout = overlay.querySelector<HTMLElement>("[data-readout]");
+    if (!sheet || !h || !v || !readout) continue;
+    let frame = 0;
+
+    sheet.addEventListener("pointermove", (event) => {
+      if (!finePointer.matches || event.pointerType !== "mouse") return;
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const rect = sheet.getBoundingClientRect();
+        const x = Math.max(0, Math.min(rect.width, event.clientX - rect.left));
+        const y = Math.max(0, Math.min(rect.height, event.clientY - rect.top));
+        const col = Math.min(4, Math.floor((x / rect.width) * 4) + 1);
+        const row = "ABC"[Math.min(2, Math.floor((y / rect.height) * 3))];
+        h.style.transform = `translateY(${y}px)`;
+        v.style.transform = `translateX(${x}px)`;
+        readout.textContent = `${row}${col}   X ${String(Math.round(x)).padStart(4, "0")}   Y ${String(Math.round(y)).padStart(4, "0")}`;
+        const flipX = x > rect.width - 220;
+        const flipY = y > rect.height - 48;
+        readout.style.transform = `translate(${flipX ? x - 12 : x + 12}px, ${flipY ? y - 36 : y + 12}px) translateX(${flipX ? "-100%" : "0"})`;
+        overlay.classList.add("is-on");
+      });
+    });
+
+    sheet.addEventListener("pointerleave", () => {
+      cancelAnimationFrame(frame);
+      overlay.classList.remove("is-on");
+    });
+  }
+</script>

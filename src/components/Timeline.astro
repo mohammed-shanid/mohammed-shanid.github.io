@@ -1,0 +1,203 @@
+---
+// Roles on a time scale, like a drawing's scale bar: one track per role, one
+// column per month. Bars link to their row in the revision table below.
+import { experience, today } from "../data/profile";
+
+const monthIndex = (ym: string) => {
+  const [y, m] = ym.split("-").map(Number);
+  return y * 12 + (m - 1);
+};
+
+const first = monthIndex(`${experience[experience.length - 1].start.slice(0, 4)}-01`);
+const last = monthIndex(`${today.slice(0, 4)}-12`);
+const months = last - first + 1;
+const now = monthIndex(today) - first;
+const years = Array.from({ length: months / 12 }, (_, i) => Number(experience[experience.length - 1].start.slice(0, 4)) + i);
+
+const rows = experience.map((job) => {
+  const start = monthIndex(job.start) - first;
+  const end = (job.end ? monthIndex(job.end) : monthIndex(today)) - first;
+  return { ...job, start, end, open: job.end === null };
+});
+---
+<div class="timeline" data-timeline style={`--months: ${months}`}>
+  <div class="scale" aria-hidden="true">
+    <span class="label-cell"></span>
+    <div class="track ticks">
+      {years.map((year, i) => (
+        <span class="year" style={`grid-column: ${i * 12 + 1} / span 12`}>{year}</span>
+      ))}
+    </div>
+  </div>
+
+  <ol class="rows" role="list">
+    {rows.map((row) => (
+      <li class="row">
+        <span class="label-cell">
+          <span class="rev">{row.rev}</span>
+          <span class="who">{row.short}</span>
+        </span>
+        <div class="track">
+          <a
+            class:list={["bar", { open: row.open }]}
+            href={`#rev-${row.rev.toLowerCase()}`}
+            style={`grid-column: ${row.start + 1} / ${row.end + 2}`}
+            data-rev={row.rev.toLowerCase()}
+          >
+            <span class="visually-hidden">{row.role}, {row.short}, {row.dates}</span>
+          </a>
+        </div>
+      </li>
+    ))}
+  </ol>
+
+  <div class="now-row" aria-hidden="true">
+    <span class="label-cell"></span>
+    <div class="track">
+      <span class="now" style={`grid-column: ${now + 1}`}>Now</span>
+    </div>
+  </div>
+</div>
+
+<style>
+  .timeline {
+    margin-bottom: var(--space-6);
+    border: var(--line-regular) solid var(--color-ink);
+    background: var(--color-paper);
+    padding: var(--space-4) var(--space-4) var(--space-2);
+  }
+
+  .scale,
+  .row,
+  .now-row {
+    display: grid;
+    grid-template-columns: var(--label-column) minmax(0, 1fr);
+    gap: var(--space-4);
+    align-items: center;
+  }
+
+  .track {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(var(--months), minmax(0, 1fr));
+    min-height: var(--space-6);
+    align-items: center;
+  }
+
+  /* Year divisions as a scale bar: a heavy tick every year, light ones every quarter */
+  .rows .track {
+    background-image:
+      linear-gradient(90deg, var(--color-rule) var(--line-hair), transparent var(--line-hair));
+    background-size: calc(100% / var(--months) * 3) 100%;
+  }
+
+  .ticks {
+    border-bottom: var(--line-regular) solid var(--color-ink);
+  }
+
+  .year {
+    padding: 0 0 var(--space-1) var(--space-2);
+    border-left: var(--line-regular) solid var(--color-ink);
+    font-family: var(--font-display);
+    font-size: var(--text-small);
+    font-weight: var(--weight-bold);
+    letter-spacing: var(--tracking-ui);
+  }
+
+  .row {
+    border-bottom: var(--line-hair) solid var(--color-rule);
+  }
+
+  .label-cell {
+    display: flex;
+    gap: var(--space-2);
+    align-items: baseline;
+    font-family: var(--font-display);
+    font-weight: var(--weight-medium);
+    letter-spacing: var(--tracking-ui);
+  }
+
+  .rev {
+    font-weight: var(--weight-bold);
+    color: var(--color-ink-muted);
+  }
+
+  .bar {
+    position: relative;
+    height: var(--space-4);
+    border: var(--line-regular) solid var(--color-ink);
+    background: var(--color-ink);
+    transition:
+      transform var(--duration-slow) var(--ease-spring),
+      background-color var(--duration-fast) var(--ease);
+  }
+
+  .bar.open {
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+  }
+
+  /* An open bar ends in an arrow: still running */
+  .bar.open::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 100%;
+    border: var(--space-2) solid transparent;
+    border-left-color: var(--color-accent);
+    transform: translateY(-50%);
+  }
+
+  .bar:hover,
+  .bar:focus-visible,
+  .bar.is-hot {
+    transform: translateY(calc(var(--lift) * -1));
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+  }
+
+  .now {
+    justify-self: start;
+    padding-left: var(--space-1);
+    border-left: var(--line-regular) solid var(--color-accent);
+    font-family: var(--font-display);
+    font-size: var(--text-small);
+    font-weight: var(--weight-bold);
+    color: var(--color-accent);
+  }
+
+  @media (max-width: 40rem) {
+    .timeline {
+      padding: var(--space-3) var(--space-3) var(--space-2);
+    }
+
+    .scale,
+    .row,
+    .now-row {
+      grid-template-columns: var(--space-7) minmax(0, 1fr);
+      gap: var(--space-2);
+    }
+
+    .who {
+      display: none;
+    }
+  }
+</style>
+
+<script>
+  import { inspect } from "../scripts/inspect";
+
+  for (const timeline of document.querySelectorAll<HTMLElement>("[data-timeline]")) {
+    for (const bar of timeline.querySelectorAll<HTMLAnchorElement>(".bar")) {
+      const row = document.getElementById(`rev-${bar.dataset.rev}`);
+      bar.addEventListener("pointerenter", () => row?.classList.add("is-hot"));
+      bar.addEventListener("pointerleave", () => row?.classList.remove("is-hot"));
+      bar.addEventListener("click", () => {
+        inspect("timeline");
+        row?.classList.remove("is-flashed");
+        void row?.offsetWidth;
+        row?.classList.add("is-flashed");
+      });
+    }
+  }
+</script>

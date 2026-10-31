@@ -1,0 +1,189 @@
+---
+// Sticky top bar: the five sheets drawn as pipeline stages (the current one
+// filled green, passed ones filled ink), the inspection log and the theme toggle.
+import InspectionLog from "./InspectionLog.astro";
+import ThemeToggle from "./ThemeToggle.astro";
+import { sheets } from "../data/inspections";
+import { profile } from "../data/profile";
+---
+<header class="bar">
+  <a class="mark" href="#top" aria-label={`${profile.name}, back to top`}>{profile.mark}</a>
+  <nav aria-label="Sheets">
+    <ol class="stages" role="list">
+      {sheets.map((sheet, i) => (
+        <li>
+          <a href={`#${sheet.id}`} data-sheet-link={sheet.id}>
+            <span class="dot" aria-hidden="true"></span>
+            <span class="num" aria-hidden="true">{i + 1}</span>
+            <span class="name">{sheet.label}</span>
+          </a>
+        </li>
+      ))}
+    </ol>
+  </nav>
+  <div class="tools">
+    <InspectionLog />
+    <ThemeToggle />
+  </div>
+</header>
+
+<style>
+  .bar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: var(--space-5);
+    padding: var(--space-3) calc(var(--gutter) + var(--sheet-pad));
+    border-bottom: var(--line-regular) solid var(--color-ink);
+    background: var(--color-paper);
+  }
+
+  .mark {
+    font-family: var(--font-display);
+    font-size: var(--text-lead);
+    font-weight: var(--weight-bold);
+    letter-spacing: var(--tracking-ui);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  nav {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    min-width: 0;
+  }
+
+  /* Stages joined by a line, like the pipeline drawing */
+  .stages {
+    display: flex;
+    align-items: center;
+  }
+
+  .stages li {
+    display: flex;
+    align-items: center;
+  }
+
+  .stages li + li::before {
+    content: "";
+    width: var(--space-5);
+    height: var(--line-regular);
+    margin: 0 var(--space-2);
+    background: var(--color-rule);
+  }
+
+  .stages a {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-family: var(--font-display);
+    font-weight: var(--weight-medium);
+    letter-spacing: var(--tracking-ui);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .dot {
+    width: var(--space-3);
+    height: var(--space-3);
+    border: var(--line-regular) solid var(--color-ink);
+    background: var(--color-paper);
+    transition:
+      background-color var(--duration-base) var(--ease),
+      border-color var(--duration-base) var(--ease);
+  }
+
+  .num {
+    display: none;
+  }
+
+  .stages a.is-passed .dot {
+    background: var(--color-ink);
+  }
+
+  .stages a[aria-current="true"] .dot {
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+  }
+
+  .stages a[aria-current="true"] {
+    color: var(--color-accent);
+  }
+
+  .tools {
+    display: flex;
+    align-items: center;
+    gap: var(--space-5);
+  }
+
+  @media (max-width: 64rem) {
+    .name {
+      display: none;
+    }
+
+    .num {
+      display: inline;
+    }
+
+    .stages li + li::before {
+      width: var(--space-3);
+    }
+  }
+
+  @media (max-width: 40rem) {
+    .bar {
+      gap: var(--space-3);
+      padding: var(--space-2) var(--gutter);
+    }
+
+    .mark {
+      display: none;
+    }
+
+    nav {
+      justify-content: flex-start;
+    }
+
+    .stages li + li::before {
+      width: var(--space-2);
+      margin: 0 var(--space-1);
+    }
+
+    .tools {
+      gap: var(--space-3);
+    }
+  }
+</style>
+
+<script>
+  // Mark the sheet in view as current and the ones above it as passed.
+  const links = [...document.querySelectorAll<HTMLAnchorElement>("[data-sheet-link]")];
+  const order = links.map((link) => link.dataset.sheetLink ?? "");
+
+  const setCurrent = (id: string) => {
+    const index = order.indexOf(id);
+    links.forEach((link, i) => {
+      link.toggleAttribute("aria-current", i === index);
+      if (i === index) link.setAttribute("aria-current", "true");
+      link.classList.toggle("is-passed", i < index);
+    });
+  };
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) setCurrent((entry.target as HTMLElement).id);
+      }
+    },
+    { rootMargin: "-40% 0px -55% 0px" },
+  );
+
+  for (const id of order) {
+    const sheet = document.getElementById(id);
+    if (sheet) observer.observe(sheet);
+  }
+  setCurrent(order[0]);
+</script>

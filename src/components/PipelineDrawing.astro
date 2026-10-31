@@ -1,0 +1,560 @@
+---
+// The hero's figure: an engineering drawing of the AWS deployment pipeline.
+// Stages are buttons: select one to read what it checks. "Run pipeline" sends a
+// marker through the stages; "Fail the health check" plays the rollback.
+// Desktop gets a wide drawing, phones a tall one; both come from the same data.
+import Button from "./Button.astro";
+import Tag from "./Tag.astro";
+import { pipeline } from "../data/profile";
+
+type Box = { x: number; y: number; w: number; h: number };
+
+const wideBoxes: Box[] = [10, 140, 270, 400, 530].map((x) => ({ x, y: 110, w: 100, h: 48 }));
+const tallBoxes: Box[] = [20, 90, 160, 230, 300].map((y) => ({ x: 40, y, w: 120, h: 40 }));
+
+const layouts = [
+  { name: "wide", viewBox: "0 0 640 300", boxes: wideBoxes },
+  { name: "tall", viewBox: "0 0 340 420", boxes: tallBoxes },
+] as const;
+
+const stages = pipeline.stages.map((stage, i) => ({ ...stage, i }));
+const ids = stages.map((s) => s.id);
+---
+<figure class="drawing" data-pipeline data-tilt-zone data-stages={JSON.stringify(ids)}>
+  <div class="tilt" data-tilt>
+    {layouts.map((layout) => (
+      <svg
+        class:list={["sheet-svg", layout.name]}
+        viewBox={layout.viewBox}
+        role="group"
+        aria-label="Pipeline stages. Select a stage to read what it checks."
+      >
+        {/* Connectors */}
+        {layout.boxes.slice(0, -1).map((b, i) => {
+          const n = layout.boxes[i + 1];
+          return layout.name === "wide" ? (
+            <path class="line" d={`M${b.x + b.w} ${b.y + b.h / 2} H${n.x}`} />
+          ) : (
+            <path class="line" d={`M${b.x + b.w / 2} ${b.y + b.h} V${n.y}`} />
+          );
+        })}
+
+        {/* Dimension line across the gate stages (test → scan) */}
+        {layout.name === "wide" ? (
+          <g class="gates">
+            <path d="M140 196 V214 M500 196 V214 M140 206 H500" />
+            <path class="arrow" d="M140 206 l8 -4 v8 z M500 206 l-8 -4 v8 z" />
+            <text x="320" y="232" text-anchor="middle">{pipeline.gates}</text>
+          </g>
+        ) : (
+          <g class="gates">
+            <path d="M14 90 H30 M14 270 H30 M22 90 V270" />
+            <path class="arrow" d="M22 90 l-4 8 h8 z M22 270 l-4 -8 h8 z" />
+            <text x="176" y="180">
+              <tspan x="176">Gates: all must pass</tspan>
+              <tspan x="176" dy="16">or nothing ships</tspan>
+            </text>
+          </g>
+        )}
+
+        {/* Rollback loop under the deploy stage */}
+        {layout.name === "wide" ? (
+          <g class="rollback" data-rollback>
+            <path class="loop" d="M610 158 V250 H550 V160" />
+            <path class="arrow" d="M550 160 l-4 8 h8 z" />
+            <text x="630" y="282" text-anchor="end">{pipeline.rollback}</text>
+          </g>
+        ) : (
+          <g class="rollback" data-rollback>
+            <path class="loop" d="M140 340 V368 H60 V342" />
+            <path class="arrow" d="M60 342 l-4 8 h8 z" />
+            <text x="40" y="396">{pipeline.rollback}</text>
+          </g>
+        )}
+
+        {/* Callouts */}
+        {layout.name === "wide" ? (
+          <g class="callouts">
+            <path d="M60 110 V64 H84" /><circle cx="60" cy="110" r="2.5" />
+            <text x="90" y="68">{pipeline.callouts.commit}</text>
+            <path d="M450 110 V64 H466" /><circle cx="450" cy="110" r="2.5" />
+            <text x="472" y="68">{pipeline.callouts.scan}</text>
+            <path d="M610 110 V30 H594" /><circle cx="610" cy="110" r="2.5" />
+            <text x="588" y="34" text-anchor="end">{pipeline.callouts.deploy}</text>
+          </g>
+        ) : (
+          <g class="callouts">
+            <path d="M160 40 H172" /><text x="176" y="44">{pipeline.callouts.commit}</text>
+            <path d="M160 250 H172" /><text x="176" y="254">{pipeline.callouts.scan}</text>
+            <path d="M160 320 H172" /><text x="176" y="324">{pipeline.callouts.deploy}</text>
+          </g>
+        )}
+
+        {/* Stages: a fixed base outline, and a face that lifts off it */}
+        {stages.map((stage) => {
+          const b = layout.boxes[stage.i];
+          return (
+            <g
+              class="stage"
+              data-stage={stage.id}
+              data-tx={layout.name === "wide" ? b.x : b.x + b.w / 2}
+              data-ty={layout.name === "wide" ? b.y + b.h / 2 : b.y}
+              role="button"
+              tabindex="0"
+              aria-pressed="false"
+              aria-label={`${stage.label} stage`}
+            >
+              <rect class="base" x={b.x} y={b.y} width={b.w} height={b.h} />
+              <g class="face">
+                <rect class="box" x={b.x} y={b.y} width={b.w} height={b.h} />
+                <text class="label" x={b.x + b.w / 2} y={b.y + b.h / 2 + 5} text-anchor="middle">{stage.label}</text>
+                <path class="mark pass" d={`M${b.x + b.w - 17} ${b.y + 10} l3 3 l7 -7`} />
+                <path class="mark fail" d={`M${b.x + b.w - 16} ${b.y + 6} l7 7 m0 -7 l-7 7`} />
+              </g>
+            </g>
+          );
+        })}
+
+        {/* The run marker */}
+        <rect class="token" x="-6" y="-6" width="12" height="12" data-token aria-hidden="true" />
+      </svg>
+    ))}
+  </div>
+
+  <figcaption class="caption">
+    <span>{pipeline.caption}</span>
+    <Tag variant="progress">{pipeline.status}</Tag>
+    <Button href={pipeline.repo} variant="secondary" size="small" class="repo">View the code on GitHub</Button>
+  </figcaption>
+
+  <div class="detail">
+    <div class="detail-body">
+      <p class="intro" data-detail="intro">Select a stage to see what it checks, or run the pipeline.</p>
+      {stages.map((stage) => (
+        <div class="detail-item" data-detail={stage.id}>
+          <h3>{stage.label}</h3>
+          <p>{stage.detail}</p>
+        </div>
+      ))}
+    </div>
+    <div class="controls" data-controls hidden>
+      <Button size="small" data-run="pass">Run pipeline</Button>
+      <Button size="small" variant="secondary" data-run="fail">Fail the health check</Button>
+      <p class="status" role="status" data-status></p>
+    </div>
+  </div>
+</figure>
+
+<style>
+  .drawing {
+    border: var(--line-hair) solid var(--color-rule);
+    background: var(--color-paper);
+    padding: var(--space-5) var(--space-5) var(--space-4);
+  }
+
+  .sheet-svg {
+    width: 100%;
+    height: auto;
+    overflow: visible;
+    color: var(--color-ink);
+  }
+
+  .tall {
+    display: none;
+  }
+
+  /* Drawing primitives */
+  .line {
+    stroke: var(--color-ink);
+    stroke-width: var(--line-regular);
+    fill: none;
+  }
+
+  .callouts path {
+    stroke: var(--color-ink-muted);
+    stroke-width: var(--line-hair);
+    fill: none;
+  }
+
+  .callouts circle {
+    fill: var(--color-ink);
+  }
+
+  .callouts text,
+  .rollback text {
+    font: var(--weight-medium) var(--drawing-note) var(--font-display);
+    fill: var(--color-ink-muted);
+  }
+
+  .gates path {
+    stroke: var(--color-accent);
+    stroke-width: var(--line-heavy);
+    fill: none;
+  }
+
+  .gates .arrow {
+    fill: var(--color-accent);
+    stroke: none;
+  }
+
+  .gates text {
+    font: var(--weight-bold) var(--drawing-note) var(--font-display);
+    fill: var(--color-accent);
+  }
+
+  .rollback .loop {
+    stroke: var(--color-ink-muted);
+    stroke-width: var(--line-hair);
+    stroke-dasharray: 4 4;
+    fill: none;
+  }
+
+  .rollback .arrow {
+    fill: var(--color-ink-muted);
+  }
+
+  .rollback.is-rolling-back .loop {
+    stroke: var(--color-ink);
+    stroke-width: var(--line-heavy);
+    animation: dash-flow 0.6s linear infinite;
+  }
+
+  .rollback.is-rolling-back text,
+  .rollback.is-rolling-back .arrow {
+    fill: var(--color-ink);
+  }
+
+  @keyframes dash-flow {
+    to {
+      stroke-dashoffset: -16;
+    }
+  }
+
+  /* Stages */
+  .stage {
+    cursor: pointer;
+    outline: none;
+  }
+
+  .base {
+    fill: none;
+    stroke: var(--color-rule);
+    stroke-width: var(--line-regular);
+  }
+
+  .face {
+    transition: transform var(--duration-slow) var(--ease-spring);
+  }
+
+  .box {
+    fill: var(--color-paper);
+    stroke: var(--color-ink);
+    stroke-width: var(--line-regular);
+    transition: stroke var(--duration-fast) var(--ease);
+  }
+
+  .label {
+    font: var(--weight-bold) var(--drawing-label) var(--font-display);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    fill: var(--color-ink);
+  }
+
+  .mark {
+    fill: none;
+    stroke-width: var(--line-heavy);
+    opacity: 0;
+    transition: opacity var(--duration-fast) var(--ease);
+  }
+
+  .pass {
+    stroke: var(--color-accent);
+  }
+
+  .fail {
+    stroke: var(--color-ink);
+  }
+
+  .stage:hover .face,
+  .stage.is-active .face,
+  .stage[aria-pressed="true"] .face {
+    transform: translate(calc(var(--lift) * -1), calc(var(--lift) * -1));
+  }
+
+  .stage:focus-visible .box {
+    stroke: var(--color-accent);
+    stroke-width: var(--line-heavy);
+  }
+
+  .stage[aria-pressed="true"] .box {
+    stroke-width: var(--line-heavy);
+  }
+
+  .stage.is-passed .box {
+    stroke: var(--color-accent);
+  }
+
+  .stage.is-passed .pass,
+  .stage.is-failed .fail {
+    opacity: 1;
+  }
+
+  .stage.is-failed .box {
+    stroke-dasharray: 5 4;
+  }
+
+  .token {
+    fill: var(--color-accent);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* Caption */
+  .caption {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3);
+    margin-top: var(--space-4);
+    font-family: var(--font-display);
+    font-size: var(--text-small);
+    font-weight: var(--weight-medium);
+    letter-spacing: var(--tracking-ui);
+    color: var(--color-ink-muted);
+  }
+
+  .caption :global(.repo) {
+    margin-left: auto;
+  }
+
+  /* Detail panel */
+  .detail {
+    margin-top: var(--space-4);
+    padding-top: var(--space-4);
+    border-top: var(--line-hair) solid var(--color-rule);
+  }
+
+  .detail-body {
+    /* Room for a stage title and two lines, so the controls don't jump. */
+    min-height: calc(var(--text-lead) * var(--leading-snug) + var(--text-body) * var(--leading-body) * 2 + var(--space-1));
+  }
+
+  .detail-item h3 {
+    font-size: var(--text-lead);
+  }
+
+  .detail-item p {
+    margin-top: var(--space-1);
+  }
+
+  .detail-item + .detail-item {
+    margin-top: var(--space-4);
+  }
+
+  .intro {
+    color: var(--color-ink-muted);
+  }
+
+  /* With JS, show one stage at a time. Without it, show them all. */
+  :global(html.js) .detail-item {
+    display: none;
+  }
+
+  :global(html.js) .detail-item.is-shown {
+    display: block;
+  }
+
+  :global(html:not(.js)) .intro {
+    display: none;
+  }
+
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3);
+    margin-top: var(--space-4);
+  }
+
+  .controls[hidden] {
+    display: none;
+  }
+
+  .status {
+    font-family: var(--font-display);
+    font-size: var(--text-small);
+    font-weight: var(--weight-medium);
+    color: var(--color-ink-muted);
+  }
+
+  @media (max-width: 40rem) {
+    .drawing {
+      padding: var(--space-3) var(--space-3) var(--space-3);
+    }
+
+    .wide {
+      display: none;
+    }
+
+    .caption :global(.repo) {
+      margin-left: 0;
+    }
+
+    .tall {
+      display: block;
+    }
+  }
+</style>
+
+<script>
+  import { inspect } from "../scripts/inspect";
+
+  // Timings for the run, in ms. The CSS tokens drive everything visual; these
+  // only pace the sequence.
+  const MOVE = 320;
+  const PAUSE = 240;
+  const ROLLBACK = 1600;
+
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  for (const figure of document.querySelectorAll<HTMLElement>("[data-pipeline]")) {
+    const ids: string[] = JSON.parse(figure.dataset.stages ?? "[]");
+    const stagesFor = (id: string) => figure.querySelectorAll<SVGGElement>(`.stage[data-stage="${id}"]`);
+    const allStages = figure.querySelectorAll<SVGGElement>(".stage");
+    const details = figure.querySelectorAll<HTMLElement>(".detail-item");
+    const intro = figure.querySelector<HTMLElement>(".intro");
+    const controls = figure.querySelector<HTMLElement>("[data-controls]");
+    const status = figure.querySelector<HTMLElement>("[data-status]");
+    const buttons = figure.querySelectorAll<HTMLButtonElement>("[data-run]");
+    const rollbacks = figure.querySelectorAll<SVGGElement>("[data-rollback]");
+    const svgs = figure.querySelectorAll<SVGSVGElement>("svg");
+    let running = false;
+
+    controls?.removeAttribute("hidden");
+
+    // Selecting a stage
+    const select = (id: string | null) => {
+      for (const stage of allStages) stage.setAttribute("aria-pressed", String(stage.dataset.stage === id));
+      for (const item of details) item.classList.toggle("is-shown", item.dataset.detail === id);
+      intro?.toggleAttribute("hidden", id !== null);
+    };
+
+    for (const stage of allStages) {
+      const toggle = () => {
+        const id = stage.dataset.stage ?? null;
+        select(stage.getAttribute("aria-pressed") === "true" ? null : id);
+      };
+      stage.addEventListener("click", toggle);
+      stage.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          toggle();
+        }
+      });
+    }
+
+    // The run
+    const moveToken = (id: string, first: boolean) =>
+      Promise.all(
+        [...svgs].map((svg) => {
+          const token = svg.querySelector<SVGRectElement>("[data-token]");
+          const target = svg.querySelector<SVGGElement>(`.stage[data-stage="${id}"]`);
+          if (!token || !target) return;
+          // The marker stops on each stage's entry edge, clear of its label.
+          const to = `translate(${target.dataset.tx}px, ${target.dataset.ty}px)`;
+          const from = token.dataset.at ?? to;
+          token.dataset.at = to;
+          if (first) {
+            token.style.transform = to;
+            return token.animate([{ opacity: 0 }, { opacity: 1 }], { duration: MOVE, fill: "forwards" }).finished;
+          }
+          return token.animate([{ transform: from }, { transform: to }], {
+            duration: MOVE,
+            easing: "cubic-bezier(0.2, 0, 0, 1)",
+            fill: "forwards",
+          }).finished;
+        }),
+      );
+
+    const hideToken = () => {
+      for (const token of figure.querySelectorAll<SVGRectElement>("[data-token]")) {
+        token.animate([{ opacity: 1 }, { opacity: 0 }], { duration: MOVE, fill: "forwards" });
+      }
+    };
+
+    const reset = () => {
+      for (const token of figure.querySelectorAll<SVGRectElement>("[data-token]")) {
+        for (const animation of token.getAnimations()) animation.cancel();
+        delete token.dataset.at;
+      }
+      for (const stage of allStages) stage.classList.remove("is-passed", "is-failed", "is-active");
+      for (const rollback of rollbacks) rollback.classList.remove("is-rolling-back");
+    };
+
+    const finish = (fail: boolean) => {
+      const last = ids[ids.length - 1];
+      for (const id of ids) {
+        const failed = fail && id === last;
+        for (const stage of stagesFor(id)) stage.classList.add(failed ? "is-failed" : "is-passed");
+      }
+      if (status) {
+        status.textContent = fail
+          ? "Health check failed at deploy. The previous release was restarted."
+          : `All ${ids.length} stages passed.`;
+      }
+    };
+
+    const run = async (fail: boolean) => {
+      if (running) return;
+      running = true;
+      for (const button of buttons) button.disabled = true;
+      reset();
+
+      if (reduceMotion.matches) {
+        finish(fail);
+      } else {
+        if (status) status.textContent = "Running…";
+        for (const [i, id] of ids.entries()) {
+          await moveToken(id, i === 0);
+          for (const stage of stagesFor(id)) stage.classList.add("is-active");
+          await wait(PAUSE);
+          for (const stage of stagesFor(id)) stage.classList.remove("is-active");
+          const failed = fail && i === ids.length - 1;
+          for (const stage of stagesFor(id)) stage.classList.add(failed ? "is-failed" : "is-passed");
+          if (failed) {
+            for (const rollback of rollbacks) rollback.classList.add("is-rolling-back");
+            if (status) status.textContent = "Health check failed. Rolling back…";
+            await wait(ROLLBACK);
+            for (const rollback of rollbacks) rollback.classList.remove("is-rolling-back");
+          }
+        }
+        hideToken();
+        finish(fail);
+      }
+
+      for (const button of buttons) button.disabled = false;
+      running = false;
+    };
+
+    for (const button of buttons) {
+      button.addEventListener("click", () => {
+        const fail = button.dataset.run === "fail";
+        inspect(fail ? "rollback" : "run");
+        run(fail);
+      });
+    }
+
+    // One run when the drawing first comes into view. With reduced motion, show the result.
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return;
+        observer.disconnect();
+        if (reduceMotion.matches) finish(false);
+        else setTimeout(() => run(false), 500);
+      },
+      { threshold: 0.4 },
+    );
+    observer.observe(figure);
+  }
+</script>

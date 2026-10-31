@@ -1,0 +1,171 @@
+/*
+ * Shared drawing primitives for the SVG diagrams. Values come from tokens.css.
+ * Nodes (.d-node) have a fixed base outline and a face that lifts off it with
+ * a spring, the same behaviour as the hero's pipeline stages.
+ */
+
+/* 3D tilt. scripts/tilt.ts sets --rx/--ry from the pointer inside [data-tilt-zone]. */
+[data-tilt] {
+  transform: perspective(var(--perspective)) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  transform-style: preserve-3d;
+  transition: transform var(--duration-slow) var(--ease-spring);
+}
+
+[data-tilt].is-tracking {
+  transition: transform var(--duration-fast) linear;
+}
+
+.d-svg {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  color: var(--color-ink);
+}
+
+.d-line {
+  fill: none;
+  stroke: var(--color-ink);
+  stroke-width: var(--line-regular);
+  transition: stroke var(--duration-fast) var(--ease), opacity var(--duration-fast) var(--ease);
+}
+
+.d-thin {
+  fill: none;
+  stroke: var(--color-ink-muted);
+  stroke-width: var(--line-hair);
+}
+
+.d-dashed {
+  stroke-dasharray: 5 4;
+}
+
+.d-accent {
+  stroke: var(--color-accent);
+}
+
+.d-fill-ink {
+  fill: var(--color-ink);
+}
+
+.d-fill-accent {
+  fill: var(--color-accent);
+}
+
+.d-note {
+  font: var(--weight-medium) var(--drawing-note) var(--font-display);
+  fill: var(--color-ink-muted);
+}
+
+.d-note-strong {
+  font: var(--weight-bold) var(--drawing-note) var(--font-display);
+  fill: var(--color-ink);
+}
+
+.d-label {
+  font: var(--weight-bold) var(--drawing-label) var(--font-display);
+  letter-spacing: var(--tracking-ui);
+  fill: var(--color-ink);
+}
+
+.d-node .d-base {
+  fill: none;
+  stroke: var(--color-rule);
+  stroke-width: var(--line-regular);
+}
+
+.d-node .d-face {
+  transition: transform var(--duration-slow) var(--ease-spring);
+}
+
+.d-node .d-box {
+  fill: var(--color-paper);
+  stroke: var(--color-ink);
+  stroke-width: var(--line-regular);
+  transition: stroke var(--duration-fast) var(--ease), stroke-dasharray var(--duration-fast) var(--ease);
+}
+
+.d-node:hover .d-face,
+.d-node.is-lifted .d-face {
+  transform: translate(calc(var(--lift) * -1), calc(var(--lift) * -1));
+}
+
+.d-node.is-on .d-box {
+  stroke: var(--color-accent);
+  stroke-width: var(--line-heavy);
+}
+
+.d-node.is-off .d-box {
+  stroke: var(--color-ink-muted);
+  stroke-dasharray: 5 4;
+}
+
+.d-node.is-off .d-label,
+.d-node.is-off .d-note {
+  fill: var(--color-ink-muted);
+}
+
+/* Shared figure frame and caption, used by every diagram */
+.d-figure {
+  border: var(--line-hair) solid var(--color-rule);
+  background: var(--color-paper);
+  padding: var(--space-5);
+}
+
+.d-caption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+  font-family: var(--font-display);
+  font-size: var(--text-small);
+  font-weight: var(--weight-medium);
+  letter-spacing: var(--tracking-ui);
+  color: var(--color-ink-muted);
+}
+
+/* Segmented control for diagram modes */
+.d-switch {
+  display: inline-flex;
+  flex-wrap: wrap;
+  border: var(--line-regular) solid var(--color-ink);
+}
+
+.d-switch button {
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  border-left: var(--line-hair) solid var(--color-rule);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--color-ink);
+  font-family: var(--font-display);
+  font-size: var(--text-small);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-ui);
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease);
+}
+
+.d-switch button:first-child {
+  border-left: 0;
+}
+
+.d-switch button:hover {
+  color: var(--color-accent);
+}
+
+.d-switch button[aria-pressed="true"] {
+  background: var(--color-ink);
+  color: var(--color-paper);
+}
+
+@media (max-width: 40rem) {
+  .d-figure {
+    padding: var(--space-3);
+  }
+
+  .d-svg {
+    --drawing-note: var(--drawing-note-compact);
+    --drawing-label: var(--drawing-label-compact);
+  }
+}

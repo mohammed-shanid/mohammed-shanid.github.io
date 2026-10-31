@@ -1,0 +1,78 @@
+---
+// Primary is the one action per screen; secondary sits beside it.
+// With `href` it renders a link; without, a <button> for in-page actions.
+import type { HTMLAttributes } from "astro/types";
+
+interface Props extends HTMLAttributes<"button"> {
+  href?: string;
+  variant?: "primary" | "secondary";
+  size?: "regular" | "small";
+}
+
+const { href, variant = "primary", size = "regular", class: className, ...rest } = Astro.props;
+const classes = ["button", variant, size, className];
+---
+{href ? (
+  <a class:list={classes} href={href}><slot /></a>
+) : (
+  <button class:list={classes} type="button" {...rest}><slot /></button>
+)}
+
+<style>
+  .button {
+    display: inline-block;
+    padding: var(--space-3) var(--space-5);
+    border: var(--line-regular) solid var(--color-ink);
+    border-radius: var(--radius);
+    font-family: var(--font-display);
+    font-size: var(--text-body);
+    font-weight: var(--weight-bold);
+    letter-spacing: var(--tracking-ui);
+    line-height: 1;
+    text-decoration: none;
+    cursor: pointer;
+    transition:
+      background-color var(--duration-fast) var(--ease),
+      border-color var(--duration-fast) var(--ease),
+      color var(--duration-fast) var(--ease),
+      transform var(--duration-slow) var(--ease-spring);
+  }
+
+  .button:active:not(:disabled) {
+    transform: translateY(var(--line-heavy));
+  }
+
+  .small {
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--text-small);
+  }
+
+  .primary {
+    background: var(--color-ink);
+    color: var(--color-paper);
+  }
+
+  .primary:hover:not(:disabled) {
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+    color: var(--color-paper);
+  }
+
+  .secondary {
+    background: transparent;
+    color: var(--color-ink);
+  }
+
+  .secondary:hover:not(:disabled) {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+  }
+
+  .button:disabled {
+    background: transparent;
+    border-color: var(--color-ink-muted);
+    border-style: dashed;
+    color: var(--color-ink-muted);
+    cursor: progress;
+  }
+</style>

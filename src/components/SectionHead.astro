@@ -1,0 +1,62 @@
+---
+// Section heading strip: the title on the left, the sheet number on the right,
+// as in a drawing set.
+interface Props {
+  id: string;
+  title: string;
+  sheet: number;
+  of: number;
+  intro?: string;
+}
+
+const { id, title, sheet, of, intro } = Astro.props;
+---
+<header class="section-head">
+  <div class="strip">
+    <h2 id={id}>{title}</h2>
+    <span class="sheet-no">Sheet {sheet} of {of}</span>
+  </div>
+  {intro && <p class="intro">{intro}</p>}
+</header>
+
+<style>
+  .section-head {
+    padding: var(--space-7) var(--sheet-pad) var(--space-6);
+  }
+
+  .strip {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: var(--space-4);
+    padding-bottom: var(--space-3);
+    border-bottom: var(--line-regular) solid var(--color-ink);
+  }
+
+  h2 {
+    font-size: var(--text-h2);
+    line-height: var(--leading-tight);
+  }
+
+  .sheet-no {
+    font-family: var(--font-display);
+    font-size: var(--text-small);
+    font-weight: var(--weight-medium);
+    letter-spacing: var(--tracking-ui);
+    color: var(--color-ink-muted);
+    white-space: nowrap;
+  }
+
+  .intro {
+    margin-top: var(--space-4);
+    font-size: var(--text-lead);
+    line-height: var(--leading-snug);
+  }
+
+  @media (max-width: 40rem) {
+    .section-head {
+      padding-top: var(--space-6);
+      padding-bottom: var(--space-5);
+    }
+  }
+</style>

@@ -1,0 +1,204 @@
+---
+// MedRAGShield's request path, from the repo README (System Architecture). The mode
+// switch shows which tiers run in each defense mode, with the README's results.
+import { medragModes } from "../../data/profile";
+
+const tiers = [
+  { n: 1, y: 70, label: "Tier 1: injection scanner", note: "13 patterns, no LLM call" },
+  { n: 2, y: 206, label: "Tier 2: confidence gate", note: "blocks or flags weak answers" },
+  { n: 3, y: 274, label: "Tier 3: drug-interaction rules", note: "10 rules" },
+];
+const initial = medragModes[medragModes.length - 1];
+---
+<figure class="d-figure mr" data-medrag data-modes={JSON.stringify(medragModes)} data-tilt-zone>
+  <div class="d-switch" role="group" aria-label="Defense mode" data-switch hidden>
+    {medragModes.map((mode) => (
+      <button type="button" data-mode={mode.id} aria-pressed={mode.id === initial.id ? "true" : "false"}>
+        {mode.label}
+      </button>
+    ))}
+  </div>
+
+  <div data-tilt class="drawing">
+    <svg class="d-svg" viewBox="0 0 460 380" role="img" aria-labelledby="mr-title">
+      <title id="mr-title">
+        Request path: the query passes the injection scanner, retrieval and the model, then the
+        confidence gate and the drug-interaction rules before an answer is returned. Each tier can
+        block the answer.
+      </title>
+
+      <path class="d-line" d="M180 46 V70 M180 114 V140 M180 180 V206 M180 250 V274 M180 318 V340" />
+
+      <g class="d-node">
+        <rect class="d-base" x="110" y="10" width="140" height="36" />
+        <g class="d-face">
+          <rect class="d-box" x="110" y="10" width="140" height="36" />
+          <text class="d-label" x="180" y="33" text-anchor="middle">Query</text>
+        </g>
+      </g>
+
+      <g class="d-node">
+        <rect class="d-base" x="40" y="140" width="280" height="40" />
+        <g class="d-face">
+          <rect class="d-box plain" x="40" y="140" width="280" height="40" />
+          <text class="d-note-strong" x="180" y="165" text-anchor="middle">Retrieval and Llama 3.2 3B</text>
+        </g>
+      </g>
+
+      {tiers.map((tier) => (
+        <g class:list={["d-node", "tier", { "is-on": initial.tiers.includes(tier.n) }, { "is-off": !initial.tiers.includes(tier.n) }]} data-tier={tier.n}>
+          <rect class="d-base" x="40" y={tier.y} width="280" height="44" />
+          <g class="d-face">
+            <rect class="d-box" x="40" y={tier.y} width="280" height="44" />
+            <text class="d-label" x="56" y={tier.y + 19}>{tier.label}</text>
+            <text class="d-note" x="56" y={tier.y + 35}>{tier.note}</text>
+          </g>
+          <path class="d-thin block-line" d={`M320 ${tier.y + 22} H360`} />
+          <text class="d-note block" x="366" y={tier.y + 26}>block</text>
+        </g>
+      ))}
+
+      <g class="d-node is-on">
+        <rect class="d-base" x="110" y="340" width="140" height="32" />
+        <g class="d-face">
+          <rect class="d-box" x="110" y="340" width="140" height="32" />
+          <text class="d-label" x="180" y="361" text-anchor="middle">Answer</text>
+        </g>
+      </g>
+    </svg>
+  </div>
+
+  <dl class="readout" aria-live="polite">
+    <div>
+      <dt>Attack success</dt>
+      <dd class="big" data-field="asr">{initial.asr}</dd>
+    </div>
+    <div>
+      <dt>Blocked</dt>
+      <dd data-field="block">{initial.block}</dd>
+    </div>
+    <div>
+      <dt>Flagged</dt>
+      <dd data-field="flag">{initial.flag}</dd>
+    </div>
+  </dl>
+  <figcaption class="d-caption">
+    Fig. 4: 40 adversarial queries in each mode, results from the repository's evaluation
+  </figcaption>
+</figure>
+
+<style>
+  .d-switch {
+    margin-bottom: var(--space-4);
+  }
+
+  .d-switch[hidden] {
+    display: none;
+  }
+
+  .plain {
+    stroke: var(--color-ink-muted);
+  }
+
+  .tier .block,
+  .tier .block-line {
+    transition: opacity var(--duration-fast) var(--ease);
+  }
+
+  .tier.is-off .block,
+  .tier.is-off .block-line {
+    opacity: 0;
+  }
+
+  .readout {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-top: var(--space-4);
+    border: var(--line-regular) solid var(--color-ink);
+  }
+
+  .readout div {
+    padding: var(--space-2) var(--space-3);
+    border-left: var(--line-hair) solid var(--color-rule);
+  }
+
+  .readout div:first-child {
+    border-left: 0;
+  }
+
+  .readout dt {
+    font-family: var(--font-display);
+    font-size: var(--text-label);
+    font-weight: var(--weight-medium);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--color-ink-muted);
+  }
+
+  .readout dd {
+    font-family: var(--font-display);
+    font-size: var(--text-lead);
+    font-weight: var(--weight-bold);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .readout .big {
+    color: var(--color-accent);
+  }
+
+  .readout .big.is-bad {
+    color: var(--color-ink);
+  }
+
+  .readout dd.is-changed {
+    animation: settle var(--duration-slow) var(--ease-spring);
+  }
+
+  @keyframes settle {
+    from {
+      transform: translateY(calc(var(--lift) * -1));
+    }
+  }
+</style>
+
+<script>
+  import { inspect } from "../../scripts/inspect";
+
+  type Mode = { id: string; tiers: number[]; asr: string; block: string; flag: string };
+
+  for (const figure of document.querySelectorAll<HTMLElement>("[data-medrag]")) {
+    const modes: Mode[] = JSON.parse(figure.dataset.modes ?? "[]");
+    const toggle = figure.querySelector<HTMLElement>("[data-switch]");
+    if (!toggle) continue;
+    toggle.hidden = false;
+
+    const show = (id: string) => {
+      const mode = modes.find((m) => m.id === id);
+      if (!mode) return;
+      for (const button of toggle.querySelectorAll<HTMLButtonElement>("[data-mode]")) {
+        button.setAttribute("aria-pressed", String(button.dataset.mode === id));
+      }
+      for (const tier of figure.querySelectorAll<SVGGElement>("[data-tier]")) {
+        const on = mode.tiers.includes(Number(tier.dataset.tier));
+        tier.classList.toggle("is-on", on);
+        tier.classList.toggle("is-off", !on);
+      }
+      for (const field of ["asr", "block", "flag"] as const) {
+        const el = figure.querySelector<HTMLElement>(`[data-field="${field}"]`);
+        if (!el || el.textContent === mode[field]) continue;
+        el.textContent = mode[field];
+        el.classList.remove("is-changed");
+        void el.offsetWidth;
+        el.classList.add("is-changed");
+      }
+      figure.querySelector('[data-field="asr"]')?.classList.toggle("is-bad", mode.asr !== "0.0%");
+    };
+
+    toggle.addEventListener("click", (event) => {
+      const button = (event.target as HTMLElement).closest<HTMLButtonElement>("[data-mode]");
+      if (!button?.dataset.mode) return;
+      show(button.dataset.mode);
+      if (button.dataset.mode !== "full") inspect("modes");
+    });
+  }
+</script>

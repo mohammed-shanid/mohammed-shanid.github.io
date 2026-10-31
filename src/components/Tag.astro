@@ -1,0 +1,55 @@
+---
+// Stack tags and status badges. Status borrows a drawing convention: a solid line
+// is built, a dashed line is planned or not yet finished.
+// `tool` marks a stack tag for the skill tracer.
+import { toolKey } from "../data/tools";
+
+interface Props {
+  variant?: "stack" | "done" | "progress";
+  tool?: string;
+}
+
+const { variant = "stack", tool } = Astro.props;
+---
+<span class:list={["tag", variant]} data-tool={tool && toolKey(tool)}><slot /></span>
+
+<style>
+  .tag {
+    display: inline-block;
+    padding: var(--space-1) var(--space-2);
+    border: var(--line-hair) solid var(--color-rule);
+    border-radius: var(--radius);
+    font-family: var(--font-display);
+    font-size: var(--text-small);
+    font-weight: var(--weight-medium);
+    letter-spacing: var(--tracking-ui);
+    line-height: var(--leading-snug);
+    color: var(--color-ink);
+    white-space: nowrap;
+    transition:
+      border-color var(--duration-fast) var(--ease),
+      background-color var(--duration-fast) var(--ease),
+      color var(--duration-fast) var(--ease),
+      transform var(--duration-slow) var(--ease-spring);
+  }
+
+  /* Lit by the skill tracer */
+  .tag:global(.is-traced) {
+    border: var(--line-regular) solid var(--color-accent);
+    background: var(--color-accent);
+    color: var(--color-paper);
+    transform: translateY(calc(var(--lift) * -1));
+  }
+
+  .done {
+    border: var(--line-regular) solid var(--color-accent);
+    color: var(--color-accent);
+    font-weight: var(--weight-bold);
+  }
+
+  .progress {
+    border: var(--line-regular) dashed var(--color-ink-muted);
+    color: var(--color-ink-muted);
+    font-weight: var(--weight-bold);
+  }
+</style>
